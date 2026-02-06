@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: "postgres:17"
+    environment:
+      POSTGRES_PASSWORD: gauserpassword
+      POSTGRES_USER: gauser
+      POSTGRES_DB: goapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - goapp_network
+
+  goapp:
+    image: cosmtrek/air:latest
+    volumes:
+      - ${PWD}:/app
+    working_dir: /app
+    tty: true
+    environment:
+      TEMPLATES_BASEPATH: /app/cmd/server/http/web/templates
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_STORENAME: "goapp"
+      POSTGRES_USERNAME: "gauser"
+      POSTGRES_PASSWORD: "gauserpassword"
+    ports:
+      - "8080:8080"
+      - "2000:2000"
+    depends_on:
+      - postgres
+    networks:
+      - goapp_network
+
+networks:
+  goapp_network:
+
+volumes:
+  postgres_data:
