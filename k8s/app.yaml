@@ -110,6 +110,7 @@ kind: Service
 metadata:
   name: goapp
 spec:
+  type: ClusterIP # Change to LoadBalancer if not using ingress
   selector:
     app: goapp
   ports:
