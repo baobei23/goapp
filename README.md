@@ -407,8 +407,8 @@ export ENABLE_TRACING=false
   https://img.shields.io/badge/godoc-reference-blue?style=for-the-badge&logo=go&logoColor=white
 [godoc-url]: http://godoc.org/github.com/baobei23/goapp
 [license-shield]:
-  https://img.shields.io/github/license/naughtygopher/goapp.svg?style=for-the-badge
-[license-url]: https://github.com/baobei23/goapp/blob/master/LICENSE
+  https://img.shields.io/github/license/baobei23/goapp.svg?style=for-the-badge
+[license-url]: https://github.com/baobei23/goapp/blob/main/LICENSE
 [linkedin-shield]:
   https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white
 [linkedin-url]: https://linkedin.com/in/ahmadreginald
