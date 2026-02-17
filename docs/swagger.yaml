@@ -1,17 +1,17 @@
 basePath: /
 definitions:
-  http.BaseResponse:
+  github_com_baobei23_goapp_cmd_server_http.BaseResponse:
     properties:
       data: {}
       meta: {}
     type: object
-  http.ErrorResponse:
+  github_com_baobei23_goapp_cmd_server_http.ErrorResponse:
     properties:
       error:
         example: Something went wrong
         type: string
     type: object
-  http.LoginRequest:
+  github_com_baobei23_goapp_cmd_server_http.LoginRequest:
     properties:
       email:
         type: string
@@ -21,7 +21,7 @@ definitions:
     - email
     - password
     type: object
-  http.LoginResponse:
+  github_com_baobei23_goapp_cmd_server_http.LoginResponse:
     properties:
       accessToken:
         type: string
@@ -32,14 +32,14 @@ definitions:
       user:
         $ref: '#/definitions/users.User'
     type: object
-  http.RefreshTokenRequest:
+  github_com_baobei23_goapp_cmd_server_http.RefreshTokenRequest:
     properties:
       refreshToken:
         type: string
     required:
     - refreshToken
     type: object
-  http.RefreshTokenResponse:
+  github_com_baobei23_goapp_cmd_server_http.RefreshTokenResponse:
     properties:
       accessToken:
         type: string
@@ -48,7 +48,7 @@ definitions:
       refreshToken:
         type: string
     type: object
-  http.RegisterNoteRequest:
+  github_com_baobei23_goapp_cmd_server_http.RegisterNoteRequest:
     properties:
       content:
         type: string
@@ -58,7 +58,87 @@ definitions:
     - content
     - title
     type: object
-  http.RegisterRequest:
+  github_com_baobei23_goapp_cmd_server_http.RegisterRequest:
+    properties:
+      contactAddress:
+        maxLength: 255
+        type: string
+      email:
+        maxLength: 255
+        type: string
+      fullName:
+        maxLength: 255
+        type: string
+      password:
+        minLength: 8
+        type: string
+      phone:
+        type: string
+    required:
+    - email
+    - fullName
+    - password
+    - phone
+    type: object
+  server_http.BaseResponse:
+    properties:
+      data: {}
+      meta: {}
+    type: object
+  server_http.ErrorResponse:
+    properties:
+      error:
+        example: Something went wrong
+        type: string
+    type: object
+  server_http.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  server_http.LoginResponse:
+    properties:
+      accessToken:
+        type: string
+      expiresIn:
+        type: integer
+      refreshToken:
+        type: string
+      user:
+        $ref: '#/definitions/users.User'
+    type: object
+  server_http.RefreshTokenRequest:
+    properties:
+      refreshToken:
+        type: string
+    required:
+    - refreshToken
+    type: object
+  server_http.RefreshTokenResponse:
+    properties:
+      accessToken:
+        type: string
+      expiresIn:
+        type: integer
+      refreshToken:
+        type: string
+    type: object
+  server_http.RegisterNoteRequest:
+    properties:
+      content:
+        type: string
+      title:
+        type: string
+    required:
+    - content
+    - title
+    type: object
+  server_http.RegisterRequest:
     properties:
       contactAddress:
         maxLength: 255
@@ -131,7 +211,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/http.RefreshTokenRequest'
+          $ref: '#/definitions/server_http.RefreshTokenRequest'
       produces:
       - application/json
       responses:
@@ -139,23 +219,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/http.BaseResponse'
+            - $ref: '#/definitions/server_http.BaseResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/http.RefreshTokenResponse'
+                  $ref: '#/definitions/server_http.RefreshTokenResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
       summary: Refresh Access Token
       tags:
       - Auth
@@ -170,7 +246,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/http.LoginRequest'
+          $ref: '#/definitions/server_http.LoginRequest'
       produces:
       - application/json
       responses:
@@ -178,24 +254,59 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/http.BaseResponse'
+            - $ref: '#/definitions/server_http.BaseResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/http.LoginResponse'
+                  $ref: '#/definitions/server_http.LoginResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
       summary: Login
+      tags:
+      - Auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      parameters:
+      - description: Register Payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/server_http.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/server_http.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/users.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/server_http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/server_http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/server_http.ErrorResponse'
+      summary: Register a new user
       tags:
       - Auth
   /usernotes:
@@ -209,7 +320,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/http.RegisterNoteRequest'
+          $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.RegisterNoteRequest'
       produces:
       - application/json
       responses:
@@ -217,23 +328,23 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/http.BaseResponse'
+            - $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/http.RegisterNoteRequest'
+                  $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.RegisterNoteRequest'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Create User Note
@@ -257,7 +368,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/http.BaseResponse'
+            - $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse'
             - properties:
                 data:
                   $ref: '#/definitions/usernotes.Note'
@@ -265,70 +376,25 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Read User Note
       tags:
       - Notes
   /users:
-    post:
-      consumes:
-      - application/json
-      description: Register a new user
-      parameters:
-      - description: Register Payload
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/http.RegisterRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/http.BaseResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/users.User'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http.ErrorResponse'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/http.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/http.ErrorResponse'
-      summary: Register a new user
-      tags:
-      - Auth
-  /users/{email}:
     get:
       consumes:
       - application/json
       description: Read User By Email
-      parameters:
-      - description: Email
-        in: path
-        name: email
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -336,7 +402,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/http.BaseResponse'
+            - $ref: '#/definitions/server_http.BaseResponse'
             - properties:
                 data:
                   $ref: '#/definitions/users.User'
@@ -344,15 +410,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Read User By Email
