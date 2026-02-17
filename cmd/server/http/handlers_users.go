@@ -14,12 +14,11 @@ import (
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
-//	@Param			email	path		string	true	"Email"
-//	@Success		200		{object}	BaseResponse{data=users.User}
-//	@Failure		400		{object}	ErrorResponse
-//	@Failure		401		{object}	ErrorResponse
-//	@Failure		500		{object}	ErrorResponse
-//	@Router			/users/{email} [get]
+//	@Success		200	{object}	BaseResponse{data=users.User}
+//	@Failure		400	{object}	ErrorResponse
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		500	{object}	ErrorResponse
+//	@Router			/users [get]
 //
 //	@security		ApiKeyAuth
 func (h *Handlers) ReadUserByEmail(c *gin.Context) error {
