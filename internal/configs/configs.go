@@ -67,7 +67,7 @@ func (cfg *Configs) Postgres() *postgres.Config {
 
 func (cfg *Configs) JWT() *jwt.TokenManager {
 	return &jwt.TokenManager{
-		SecretKey:     os.Getenv("JWT_SECRET_KEY"),
+		SecretKey:     os.Getenv("JWT_SECRET"),
 		AccessExpiry:  15 * time.Minute,
 		RefreshExpiry: 24 * time.Hour,
 	}
