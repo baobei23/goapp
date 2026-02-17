@@ -28,7 +28,7 @@ type RegisterRequest struct {
 //	@Failure		400		{object}	ErrorResponse
 //	@Failure		409		{object}	ErrorResponse
 //	@Failure		500		{object}	ErrorResponse
-//	@Router			/users [post]
+//	@Router			/register [post]
 func (h *Handlers) Register(c *gin.Context) error {
 	req := &RegisterRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
