@@ -67,6 +67,49 @@ explained based on a note taking web application.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## Environment Variables
+
+This application requires several environment variables to run correctly across
+local development, Docker Compose, and Kubernetes.
+
+### Required
+
+- `ENV` - application environment (`local`, `test`, `staging`, `production`)
+- `APP_NAME` - service name
+- `APP_VERSION` - application version
+
+- `POSTGRES_HOST` - database host (`localhost` for local, `postgres` for Docker
+  Compose service-to-service)
+- `POSTGRES_PORT` - database port (typically `5432`)
+- `POSTGRES_STORENAME` - database name
+- `POSTGRES_USERNAME` - database username
+- `POSTGRES_PASSWORD` - database password
+- `POSTGRES_SSLMODE` - PostgreSQL SSL mode (commonly `disable` in local
+  development)
+
+- `JWT_SECRET` - secret used to sign and verify JWTs
+
+  > Keep this name consistent across all environments (the code currently reads
+  > `JWT_SECRET`).
+
+- `TEMPLATES_BASEPATH` - base path for HTML templates
+
+### Optional
+
+- `ENABLE_METRICS` - enable/disable metrics (`true`/`false`, enabled by default)
+- `ENABLE_TRACING` - enable/disable tracing (`true`/`false`, enabled by default)
+
+### Example (`.envrc`)
+
+export ENV= export APP_NAME= export APP_VERSION=
+
+export POSTGRES_HOST= export POSTGRES_PORT= export POSTGRES_STORENAME= export
+POSTGRES_USERNAME= export POSTGRES_PASSWORD= export POSTGRES_SSLMODE=
+
+export JWT_SECRET_KEY= export TEMPLATES_BASEPATH=
+
+export ENABLE_METRICS= export ENABLE_TRACING=
+
 ## Table of contents
 
 1. [Directory structure](#directory-structure)
