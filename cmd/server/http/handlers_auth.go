@@ -30,7 +30,7 @@ type RegisterRequest struct {
 func (h *Handlers) Register(c *gin.Context) error {
 	req := &RegisterRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		return errors.InputBodyErr(err, "invalid JSON provided")
+		return errors.InputBodyErr(err, errInvalidJsonInputMsg)
 	}
 
 	u := &users.User{
@@ -74,7 +74,7 @@ type LoginResponse struct {
 func (h *Handlers) Login(c *gin.Context) error {
 	req := &LoginRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		return errors.InputBodyErr(err, "invalid JSON provided")
+		return errors.InputBodyErr(err, errInvalidJsonInputMsg)
 	}
 
 	user, err := h.apis.Login(c.Request.Context(), req.Email, req.Password)
@@ -121,7 +121,7 @@ type RefreshTokenResponse struct {
 func (h *Handlers) RefreshToken(c *gin.Context) error {
 	req := &RefreshTokenRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		return errors.InputBodyErr(err, "invalid JSON provided")
+		return errors.InputBodyErr(err, errInvalidJsonInputMsg)
 	}
 
 	claims, err := h.tm.Validate(req.RefreshToken)

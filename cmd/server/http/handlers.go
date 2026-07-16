@@ -16,6 +16,8 @@ import (
 	"github.com/baobei23/goapp/internal/pkg/logger"
 )
 
+const errInvalidJsonInputMsg = "invalid JSON provided"
+
 // Handlers struct has all the dependencies required for HTTP handlers
 type Handlers struct {
 	apis api.Server

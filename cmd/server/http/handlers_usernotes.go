@@ -36,7 +36,7 @@ func (h *Handlers) RegisterNote(c *gin.Context) error {
 
 	req := &RegisterNoteRequest{}
 	if err := c.ShouldBindJSON(req); err != nil {
-		return errors.InputBodyErr(err, "invalid JSON provided")
+		return errors.InputBodyErr(err, errInvalidJsonInputMsg)
 	}
 
 	unote := &usernotes.Note{
