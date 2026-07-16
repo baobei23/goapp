@@ -19,12 +19,17 @@ services:
     working_dir: /app
     tty: true
     environment:
+      ENV: ${ENV}
+      APP_NAME: ${APP_NAME}
+      APP_VERSION: ${APP_VERSION}
       TEMPLATES_BASEPATH: /app/cmd/server/http/web/templates
       POSTGRES_HOST: postgres
       POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_STORENAME: ${POSTGRES_STORENAME}
       POSTGRES_USERNAME: ${POSTGRES_USERNAME}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      ENABLE_METRICS: ${ENABLE_METRICS}
+      ENABLE_TRACING: ${ENABLE_TRACING}
     ports:
       - '8080:8080'
       - '2000:2000'

@@ -9,13 +9,11 @@ FROM alpine:3.23
 LABEL maintainer="Author <reginaldsaja98@gmail.com>"
 
 
-# Install CA certs and dependencies for Alpine
+# Install CA certs, dependencies, and add new user 'appuser'
 RUN apk update && apk add --no-cache \
     ca-certificates \
-    && rm -rf /var/cache/apk/*
-
-# Add new user 'appuser'
-RUN adduser -D -h /home/appuser appuser
+    && rm -rf /var/cache/apk/* \
+    && adduser -D -h /home/appuser appuser
 USER appuser
 
 COPY --from=builder /app/cmd/server/http/web /home/appuser/app/web
