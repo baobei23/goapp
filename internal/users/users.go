@@ -17,12 +17,10 @@ var (
 )
 
 type User struct {
-	ID             string `json:"id"`
-	FullName       string `json:"fullName"`
-	Email          string `json:"email"`
-	Password       []byte `json:"-"`
-	Phone          string `json:"phone"`
-	ContactAddress string `json:"contactAddress"`
+	ID       string `json:"id"`
+	FullName string `json:"fullName"`
+	Email    string `json:"email"`
+	Password []byte `json:"-"`
 }
 
 // ValidateForCreate runs the validation required for when a user is being created. i.e. ID is not available
@@ -46,8 +44,6 @@ func (us *User) Sanitize() {
 	us.ID = strings.TrimSpace(us.ID)
 	us.FullName = strings.TrimSpace(us.FullName)
 	us.Email = strings.TrimSpace(us.Email)
-	us.Phone = strings.TrimSpace(us.Phone)
-	us.ContactAddress = strings.TrimSpace(us.ContactAddress)
 }
 
 func (us *User) HashPassword() error {

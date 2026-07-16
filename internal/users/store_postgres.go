@@ -2,7 +2,6 @@ package users
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -19,7 +18,7 @@ type pgstore struct {
 
 func (ps *pgstore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	query := fmt.Sprintf(`
-		SELECT id, full_name, email, password, phone, contact_address
+		SELECT id, full_name, email, password
 		FROM %s
 		WHERE email = $1`,
 		ps.tableName,
@@ -30,11 +29,9 @@ func (ps *pgstore) GetUserByEmail(ctx context.Context, email string) (*User, err
 
 	user := new(User)
 	uid := new(uuid.NullUUID)
-	address := new(sql.NullString)
-	phone := new(sql.NullString)
 
 	row := ps.pqdriver.QueryRow(ctx, query, email)
-	err := row.Scan(uid, &user.FullName, &user.Email, &user.Password, phone, address)
+	err := row.Scan(uid, &user.FullName, &user.Email, &user.Password)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errors.NotFoundErr(ErrUserEmailNotFound, email)
@@ -42,8 +39,6 @@ func (ps *pgstore) GetUserByEmail(ctx context.Context, email string) (*User, err
 		return nil, errors.Wrap(err, "failed getting user info")
 	}
 	user.ID = uid.UUID.String()
-	user.ContactAddress = address.String
-	user.Phone = phone.String
 
 	return user, nil
 }
@@ -52,8 +47,8 @@ func (ps *pgstore) SaveUser(ctx context.Context, user *User) (string, error) {
 	user.ID = ps.newUserID()
 
 	query := fmt.Sprintf(`
-		INSERT INTO %s (id, full_name, email, password, phone, contact_address)
-		VALUES ($1, $2, $3, $4, $5, $6)`,
+		INSERT INTO %s (id, full_name, email, password)
+		VALUES ($1, $2, $3, $4)`,
 		ps.tableName,
 	)
 
@@ -65,14 +60,6 @@ func (ps *pgstore) SaveUser(ctx context.Context, user *User) (string, error) {
 		user.FullName,
 		user.Email,
 		user.Password,
-		sql.NullString{
-			String: user.Phone,
-			Valid:  len(user.Phone) != 0,
-		},
-		sql.NullString{
-			String: user.ContactAddress,
-			Valid:  len(user.ContactAddress) != 0,
-		},
 	)
 
 	if err != nil {
@@ -94,14 +81,6 @@ func (ps *pgstore) BulkSaveUser(ctx context.Context, users []User) error {
 			user.FullName,
 			user.Email,
 			user.Password,
-			sql.NullString{
-				String: user.Phone,
-				Valid:  len(user.Phone) != 0,
-			},
-			sql.NullString{
-				String: user.ContactAddress,
-				Valid:  len(user.ContactAddress) != 0,
-			},
 		})
 	}
 
@@ -111,7 +90,7 @@ func (ps *pgstore) BulkSaveUser(ctx context.Context, users []User) error {
 	inserted, err := ps.pqdriver.CopyFrom(
 		ctx,
 		pgx.Identifier{ps.tableName},
-		[]string{"id", "full_name", "email", "password", "phone", "contact_address"},
+		[]string{"id", "full_name", "email", "password"},
 		pgx.CopyFromRows(rows),
 	)
 	if err != nil {

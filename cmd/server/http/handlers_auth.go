@@ -9,11 +9,9 @@ import (
 )
 
 type RegisterRequest struct {
-	FullName       string `json:"fullName" binding:"required,max=255"`
-	Email          string `json:"email" binding:"required,email,max=255"`
-	Password       string `json:"password" binding:"required,min=8"`
-	Phone          string `json:"phone" binding:"required"`
-	ContactAddress string `json:"contactAddress" binding:"max=255"`
+	FullName string `json:"fullName" binding:"required,max=255"`
+	Email    string `json:"email" binding:"required,email,max=255"`
+	Password string `json:"password" binding:"required,min=8"`
 }
 
 // register godoc
@@ -36,11 +34,9 @@ func (h *Handlers) Register(c *gin.Context) error {
 	}
 
 	u := &users.User{
-		FullName:       req.FullName,
-		Email:          req.Email,
-		Password:       []byte(req.Password),
-		Phone:          req.Phone,
-		ContactAddress: req.ContactAddress,
+		FullName: req.FullName,
+		Email:    req.Email,
+		Password: []byte(req.Password),
 	}
 
 	createdUser, err := h.apis.Register(c.Request.Context(), u)

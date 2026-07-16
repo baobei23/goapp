@@ -15,15 +15,13 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT UNIQUE,
     password BYTEA,
     full_name TEXT,
-    phone TEXT,
-    contact_address TEXT,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS user_notes (
     id UUID PRIMARY KEY,
-    title TEXT,
+    title VARCHAR(255),
     content TEXT,
     user_id UUID references users(id),
     created_at timestamptz DEFAULT now(),

@@ -60,9 +60,6 @@ definitions:
     type: object
   github_com_baobei23_goapp_cmd_server_http.RegisterRequest:
     properties:
-      contactAddress:
-        maxLength: 255
-        type: string
       email:
         maxLength: 255
         type: string
@@ -72,13 +69,10 @@ definitions:
       password:
         minLength: 8
         type: string
-      phone:
-        type: string
     required:
     - email
     - fullName
     - password
-    - phone
     type: object
   server_http.BaseResponse:
     properties:
@@ -140,9 +134,6 @@ definitions:
     type: object
   server_http.RegisterRequest:
     properties:
-      contactAddress:
-        maxLength: 255
-        type: string
       email:
         maxLength: 255
         type: string
@@ -152,13 +143,10 @@ definitions:
       password:
         minLength: 8
         type: string
-      phone:
-        type: string
     required:
     - email
     - fullName
     - password
-    - phone
     type: object
   usernotes.Note:
     properties:
@@ -177,15 +165,11 @@ definitions:
     type: object
   users.User:
     properties:
-      contactAddress:
-        type: string
       email:
         type: string
       fullName:
         type: string
       id:
-        type: string
-      phone:
         type: string
     type: object
 info:
@@ -211,7 +195,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/server_http.RefreshTokenRequest'
+          $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.RefreshTokenRequest'
       produces:
       - application/json
       responses:
@@ -219,19 +203,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server_http.BaseResponse'
+            - $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server_http.RefreshTokenResponse'
+                  $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.RefreshTokenResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
       summary: Refresh Access Token
       tags:
       - Auth
@@ -246,7 +230,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/server_http.LoginRequest'
+          $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.LoginRequest'
       produces:
       - application/json
       responses:
@@ -254,19 +238,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server_http.BaseResponse'
+            - $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server_http.LoginResponse'
+                  $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.LoginResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
       summary: Login
       tags:
       - Auth
@@ -281,7 +265,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/server_http.RegisterRequest'
+          $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.RegisterRequest'
       produces:
       - application/json
       responses:
@@ -289,7 +273,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/server_http.BaseResponse'
+            - $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse'
             - properties:
                 data:
                   $ref: '#/definitions/users.User'
@@ -297,15 +281,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
       summary: Register a new user
       tags:
       - Auth
@@ -402,7 +386,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server_http.BaseResponse'
+            - $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse'
             - properties:
                 data:
                   $ref: '#/definitions/users.User'
@@ -410,15 +394,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Read User By Email

@@ -14,18 +14,14 @@ func TestUser_Sanitize(t *testing.T) {
 		{
 			name: "sanitize",
 			input: User{
-				ID:             " ID ",
-				FullName:       " Fullname ",
-				Email:          " Email ",
-				Phone:          " Phone ",
-				ContactAddress: " Contact Address ",
+				ID:       " ID ",
+				FullName: " Fullname ",
+				Email:    " Email ",
 			},
 			output: User{
-				ID:             "ID",
-				FullName:       "Fullname",
-				Email:          "Email",
-				Phone:          "Phone",
-				ContactAddress: "Contact Address",
+				ID:       "ID",
+				FullName: "Fullname",
+				Email:    "Email",
 			},
 		},
 	}
@@ -94,12 +90,10 @@ func TestUser_ValidateForCreate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			us := &User{
-				ID:             tt.fields.ID,
-				FullName:       tt.fields.FullName,
-				Email:          tt.fields.Email,
-				Password:       []byte(tt.fields.Password),
-				Phone:          tt.fields.Phone,
-				ContactAddress: tt.fields.ContactAddress,
+				ID:       tt.fields.ID,
+				FullName: tt.fields.FullName,
+				Email:    tt.fields.Email,
+				Password: []byte(tt.fields.Password),
 			}
 			if err := us.ValidateForCreate(); (err != nil) != tt.wantErr {
 				t.Errorf("User.ValidateForCreate() error = %v, wantErr %v", err, tt.wantErr)

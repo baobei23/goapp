@@ -44,7 +44,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/server_http.RefreshTokenRequest"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.RefreshTokenRequest"
                         }
                     }
                 ],
@@ -54,13 +54,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server_http.BaseResponse"
+                                    "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server_http.RefreshTokenResponse"
+                                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.RefreshTokenResponse"
                                         }
                                     }
                                 }
@@ -70,13 +70,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     }
                 }
@@ -102,7 +102,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/server_http.LoginRequest"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.LoginRequest"
                         }
                     }
                 ],
@@ -112,13 +112,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server_http.BaseResponse"
+                                    "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server_http.LoginResponse"
+                                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.LoginResponse"
                                         }
                                     }
                                 }
@@ -128,13 +128,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     }
                 }
@@ -160,7 +160,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/server_http.RegisterRequest"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.RegisterRequest"
                         }
                     }
                 ],
@@ -170,7 +170,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server_http.BaseResponse"
+                                    "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse"
                                 },
                                 {
                                     "type": "object",
@@ -186,19 +186,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     }
                 }
@@ -364,7 +364,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server_http.BaseResponse"
+                                    "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse"
                                 },
                                 {
                                     "type": "object",
@@ -380,19 +380,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     }
                 }
@@ -493,14 +493,9 @@ const docTemplate = `{
             "required": [
                 "email",
                 "fullName",
-                "password",
-                "phone"
+                "password"
             ],
             "properties": {
-                "contactAddress": {
-                    "type": "string",
-                    "maxLength": 255
-                },
                 "email": {
                     "type": "string",
                     "maxLength": 255
@@ -512,9 +507,6 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "minLength": 8
-                },
-                "phone": {
-                    "type": "string"
                 }
             }
         },
@@ -611,14 +603,9 @@ const docTemplate = `{
             "required": [
                 "email",
                 "fullName",
-                "password",
-                "phone"
+                "password"
             ],
             "properties": {
-                "contactAddress": {
-                    "type": "string",
-                    "maxLength": 255
-                },
                 "email": {
                     "type": "string",
                     "maxLength": 255
@@ -630,9 +617,6 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "minLength": 8
-                },
-                "phone": {
-                    "type": "string"
                 }
             }
         },
@@ -662,9 +646,6 @@ const docTemplate = `{
         "users.User": {
             "type": "object",
             "properties": {
-                "contactAddress": {
-                    "type": "string"
-                },
                 "email": {
                     "type": "string"
                 },
@@ -672,9 +653,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "string"
-                },
-                "phone": {
                     "type": "string"
                 }
             }
