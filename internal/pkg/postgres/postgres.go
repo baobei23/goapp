@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/naughtygopher/errors"
 
-	"github.com/baobei23/goapp/internal/pkg/apm"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -70,7 +70,7 @@ func pgxPoolConfig(cfg *Config) (*pgxpool.Config, error) {
 
 	if cfg.EnableTracing {
 		pgxconfig.Tracer = otelpgx.NewTracer(
-			otelpgx.WithTracerProvider(apm.Global().GetTracerProvider()),
+			otelpgx.WithTracerProvider(otel.GetTracerProvider()),
 		)
 	}
 

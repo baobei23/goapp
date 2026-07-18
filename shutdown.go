@@ -10,8 +10,6 @@ import (
 	"github.com/baobei23/goapp/cmd/server/grpc"
 	xhttp "github.com/baobei23/goapp/cmd/server/http"
 	"log/slog"
-
-	"github.com/baobei23/goapp/internal/pkg/apm"
 	"github.com/baobei23/goapp/internal/pkg/health"
 )
 
@@ -22,7 +20,6 @@ func shutdown(
 	healthResp *http.Server,
 	httpServer *xhttp.HTTP,
 	grpcServer *grpc.GRPC,
-	apmIns *apm.APM,
 ) {
 	// set the service as Not ready as soon as it's exiting main
 	pResp.SetNotReady(true)
@@ -65,14 +62,13 @@ func shutdown(
 		fmt.Sprintf("initiated: %s", time.Now().Format(time.RFC3339)),
 	)
 	slog.InfoContext(ctx, "initiating shutdown")
-	shutdownDependenciesAndServices(ctx, httpServer, grpcServer, apmIns)
+	shutdownDependenciesAndServices(ctx, httpServer, grpcServer)
 }
 
 func shutdownDependenciesAndServices(
 	ctx context.Context,
 	httpServer *xhttp.HTTP,
 	grpcServer *grpc.GRPC,
-	apmIns *apm.APM,
 ) {
 	wgroup := &sync.WaitGroup{}
 	if httpServer != nil {
@@ -93,14 +89,5 @@ func shutdownDependenciesAndServices(
 
 	// after all the APIs of the application are shutdown (e.g. HTTP, gRPC, Pubsub listener etc.)
 	// we should close connections to dependencies like database, cache etc.
-	// This should only be done after the APIs are shutdown completely
-	if apmIns != nil {
-		wgroup.Add(1)
-		go func() {
-			defer wgroup.Done()
-			_ = apmIns.Shutdown(ctx)
-		}()
-	}
-
 	wgroup.Wait()
 }

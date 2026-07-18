@@ -15,35 +15,60 @@ import (
 	"github.com/baobei23/goapp/internal/configs"
 	"log/slog"
 
-	"github.com/baobei23/goapp/internal/pkg/apm"
 	"github.com/baobei23/goapp/internal/pkg/health"
 	"github.com/baobei23/goapp/internal/pkg/jwt"
 	"github.com/baobei23/goapp/internal/pkg/postgres"
 	"github.com/baobei23/goapp/internal/usernotes"
 	"github.com/baobei23/goapp/internal/users"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
 var now = time.Now()
 
-func startAPM(ctx context.Context, cfg *configs.Configs) *apm.APM {
-	if !cfg.EnableTracing && !cfg.EnableMetrics {
+func setupTelemetry(cfgs *configs.Configs) *sdktrace.TracerProvider {
+	if !cfgs.EnableTracing && !cfgs.EnableMetrics {
 		return nil
 	}
-	ap, err := apm.New(ctx, &apm.Options{
-		Debug:                cfg.Environment == configs.EnvLocal,
-		Environment:          cfg.Environment.String(),
-		ServiceName:          cfg.AppName,
-		ServiceVersion:       cfg.AppVersion,
-		PrometheusScrapePort: 9090,
-		TracesSampleRate:     50.00,
-		UseStdOut:            cfg.Environment == configs.EnvLocal,
-		EnableTracing:        cfg.EnableTracing,
-		EnableMetrics:        cfg.EnableMetrics,
-	})
-	if err != nil {
-		panic(errors.Wrap(err, "failed to start APM"))
+
+	if cfgs.EnableMetrics {
+		go func() {
+			port := 9090
+			mux := http.NewServeMux()
+			mux.Handle("/-/metrics", promhttp.Handler())
+			slog.Info(fmt.Sprintf("[otel/http] starting prometheus metrics on :%d/-/metrics", port))
+			_ = http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
+		}()
 	}
-	return ap
+
+	var tp *sdktrace.TracerProvider
+	if cfgs.EnableTracing {
+		res, _ := resource.Merge(
+			resource.Default(),
+			resource.NewWithAttributes(
+				semconv.SchemaURL,
+				semconv.ServiceName(cfgs.AppName),
+				semconv.ServiceVersion(cfgs.AppVersion),
+				semconv.DeploymentEnvironment(cfgs.Environment.String()),
+			),
+		)
+
+		exporter, _ := otlptracegrpc.New(context.Background())
+
+		tp = sdktrace.NewTracerProvider(
+			sdktrace.WithSampler(sdktrace.TraceIDRatioBased(0.5)),
+			sdktrace.WithResource(res),
+			sdktrace.WithBatcher(exporter),
+		)
+		otel.SetTracerProvider(tp)
+	}
+
+	return tp
 }
 
 func startServers(svr api.Server, cfgs *configs.Configs, tm *jwt.TokenManager, fatalErr chan<- error) (*xhttp.HTTP, *grpc.GRPC) {

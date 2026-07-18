@@ -33,6 +33,7 @@ services:
     ports:
       - '8080:8080'
       - '2000:2000'
+      - '9090:9090'
     depends_on:
       - postgres
     networks:

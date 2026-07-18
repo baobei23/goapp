@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/baobei23/goapp/internal/api"
-	"github.com/baobei23/goapp/internal/pkg/apm"
 	"github.com/baobei23/goapp/internal/pkg/jwt"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/otel"
 )
 
 // Config holds all the configuration required to start the HTTP server
@@ -65,8 +65,8 @@ func NewService(cfg *Config, apis api.Server, tm *jwt.TokenManager) (*HTTP, erro
 	}
 
 	if cfg.EnableTracing {
-		// Use the global TracerProvider that was already set up in startAPM
-		tp := apm.Global().GetTracerProvider()
+		// Use the global TracerProvider
+		tp := otel.GetTracerProvider()
 		router.Use(otelgin.Middleware("goapp", otelgin.WithTracerProvider(tp)))
 	}
 

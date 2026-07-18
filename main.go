@@ -97,7 +97,10 @@ func main() {
 	))
 
 	// This needs to remain after log initialisation and before server initialisation.
-	ap := startAPM(ctx, cfgs)
+	tp := setupTelemetry(cfgs)
+	if tp != nil {
+		defer tp.Shutdown(ctx)
+	}
 
 	var healthResponder *http.Server
 
@@ -115,7 +118,6 @@ func main() {
 		healthResponder,
 		hserver,
 		gserver,
-		ap,
 	)
 	exitErr = <-fatalErr
 }
