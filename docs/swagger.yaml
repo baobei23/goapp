@@ -386,7 +386,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse'
+            - $ref: '#/definitions/server_http.BaseResponse'
             - properties:
                 data:
                   $ref: '#/definitions/users.User'
@@ -394,18 +394,59 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Read User By Email
+      tags:
+      - Users
+  /users/password:
+    put:
+      consumes:
+      - application/json
+      description: Change Password
+      parameters:
+      - description: Passwords
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            new_password:
+              type: string
+            old_password:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/server_http.BaseResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/server_http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/server_http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/server_http.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Change Password
       tags:
       - Users
 securityDefinitions:

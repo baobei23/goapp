@@ -69,7 +69,6 @@ func (ps *pgstore) SaveNote(ctx context.Context, note *Note) (string, error) {
 	return noteID, nil
 }
 
-
 func NewPostgresStore(pqdriver *pgxpool.Pool, tableName string) store {
 	return &pgstore{
 		pqdriver:  pqdriver,

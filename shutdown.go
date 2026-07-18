@@ -6,10 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/baobei23/goapp/cmd/server/grpc"
-	xhttp "github.com/baobei23/goapp/cmd/server/http"
 	"log/slog"
 	"sync/atomic"
+
+	"github.com/baobei23/goapp/cmd/server/grpc"
+	xhttp "github.com/baobei23/goapp/cmd/server/http"
 )
 
 func shutdown(

@@ -104,6 +104,19 @@ func (ps *pgstore) BulkSaveUser(ctx context.Context, users []User) error {
 	return nil
 }
 
+func (ps *pgstore) UpdatePassword(ctx context.Context, email string, newPassword []byte) error {
+	query := fmt.Sprintf(`UPDATE %s SET password = $1 WHERE email = $2`, ps.tableName)
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := ps.pqdriver.Exec(ctx, query, newPassword, email)
+	if err != nil {
+		return fmt.Errorf("failed updating password: %w", err)
+	}
+
+	return nil
+}
 
 func NewPostgresStore(pqdriver *pgxpool.Pool, tablename string) *pgstore {
 	return &pgstore{

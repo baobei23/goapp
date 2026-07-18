@@ -39,6 +39,7 @@ func (h *Handlers) registerRoutes(r *gin.Engine) {
 
 	//users
 	protected.GET("/users", h.ReadUserByEmail)
+	protected.PUT("/users/password", h.ChangePassword)
 
 	//usernotes
 	protected.POST("/usernotes", h.RegisterNote)

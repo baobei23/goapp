@@ -2,9 +2,9 @@ package users
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"time"
-	"log/slog"
 
 	"errors"
 	"fmt"
@@ -66,6 +66,7 @@ type store interface {
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	SaveUser(ctx context.Context, user *User) (string, error)
 	BulkSaveUser(ctx context.Context, users []User) error
+	UpdatePassword(ctx context.Context, email string, newPassword []byte) error
 }
 type Users struct {
 	store store
@@ -138,6 +139,28 @@ func (us *Users) Login(ctx context.Context, email, password string) (*User, erro
 		return nil, errors.New("invalid credentials")
 	}
 	return user, nil
+}
+
+func (us *Users) ChangePassword(ctx context.Context, email, oldPassword, newPassword string) error {
+	user, err := us.store.GetUserByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+
+	if !user.CheckPassword(oldPassword) {
+		return errors.New("invalid credentials")
+	}
+
+	user.Password = []byte(newPassword)
+	if err := user.HashPassword(); err != nil {
+		return fmt.Errorf("failed to hash new password: %w", err)
+	}
+
+	if err := us.store.UpdatePassword(ctx, email, user.Password); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return nil
 }
 
 func NewService(store store) *Users {

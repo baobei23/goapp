@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sync/atomic"
-	"log/slog"
 
 	"github.com/baobei23/goapp/cmd/server/grpc"
 	xhttp "github.com/baobei23/goapp/cmd/server/http"

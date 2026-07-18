@@ -12,8 +12,9 @@ import (
 
 	"log/slog"
 
-	"github.com/baobei23/goapp/internal/configs"
 	"sync/atomic"
+
+	"github.com/baobei23/goapp/internal/configs"
 )
 
 //	@title			GoApp API

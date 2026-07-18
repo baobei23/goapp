@@ -30,6 +30,10 @@ func (a *API) ReadUserByEmail(ctx context.Context, email string) (*users.User, e
 	return u, nil
 }
 
+func (a *API) ChangePassword(ctx context.Context, email, oldPassword, newPassword string) error {
+	return a.users.ChangePassword(ctx, email, oldPassword, newPassword)
+}
+
 func (a *API) AsyncRegisters(ctx context.Context, users []users.User) error {
 	return a.users.AsyncRegisters(ctx, users)
 }
