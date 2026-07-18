@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -10,21 +9,19 @@ import (
 	"github.com/baobei23/goapp/cmd/server/grpc"
 	xhttp "github.com/baobei23/goapp/cmd/server/http"
 	"log/slog"
-	"github.com/baobei23/goapp/internal/pkg/health"
+	"sync/atomic"
 )
 
 func shutdown(
 	shutdownGraceperiod time.Duration,
 	probeInterval time.Duration,
-	pResp *health.ProbeResponder,
+	isReady *atomic.Bool,
 	healthResp *http.Server,
 	httpServer *xhttp.HTTP,
 	grpcServer *grpc.GRPC,
 ) {
 	// set the service as Not ready as soon as it's exiting main
-	pResp.SetNotReady(true)
-	pResp.SetNotStarted(true)
-	pResp.SetNotLive(true)
+	isReady.Store(false)
 
 	// the time should be decided based on the grace period allowed for shutdown.
 	// e.g. for Kubernetes terminationGracePeriodSeconds, https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/
@@ -57,10 +54,6 @@ func shutdown(
 	*/
 	// in this case, the Kuberenetes probe interval is assumed to be 2 seconds
 	time.Sleep(probeInterval)
-	pResp.AppendHealthResponse(
-		"shutdown",
-		fmt.Sprintf("initiated: %s", time.Now().Format(time.RFC3339)),
-	)
 	slog.InfoContext(ctx, "initiating shutdown")
 	shutdownDependenciesAndServices(ctx, httpServer, grpcServer)
 }

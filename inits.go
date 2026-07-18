@@ -2,20 +2,21 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/naughtygopher/errors"
+
+	"log/slog"
 
 	"github.com/baobei23/goapp/cmd/server/grpc"
 	xhttp "github.com/baobei23/goapp/cmd/server/http"
 	"github.com/baobei23/goapp/internal/api"
 	"github.com/baobei23/goapp/internal/configs"
-	"log/slog"
+	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/baobei23/goapp/internal/pkg/health"
 	"github.com/baobei23/goapp/internal/pkg/jwt"
 	"github.com/baobei23/goapp/internal/pkg/postgres"
 	"github.com/baobei23/goapp/internal/usernotes"
@@ -94,69 +95,47 @@ func startServers(svr api.Server, cfgs *configs.Configs, tm *jwt.TokenManager, f
 	return hserver, nil
 }
 
-func healthResponseHandler(ps *health.ProbeResponder, cfg *configs.Configs) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		payload := map[string]any{
-			"env":        cfg.Environment.String(),
-			"version":    cfg.AppVersion,
-			"commit":     "<git commit hash>",
-			"status":     "all systems up and running",
-			"startedAt":  now.String(),
-			"releasedOn": now.String(),
+func startHealthServer(ctx context.Context, db *pgxpool.Pool, isReady *atomic.Bool, fatalErr chan<- error) *http.Server {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/-/live", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+	mux.HandleFunc("/-/ready", func(w http.ResponseWriter, r *http.Request) {
+		if !isReady.Load() {
+			http.Error(w, "shutting down", http.StatusServiceUnavailable)
+			return
 		}
-
-		for key, value := range ps.HealthResponse() {
-			payload[key] = value
+		if err := db.Ping(r.Context()); err != nil {
+			http.Error(w, "db not ready", http.StatusServiceUnavailable)
+			return
 		}
-		b, _ := json.Marshal(payload)
-		w.Header().Add("Content-Type", "application/json")
-		_, _ = w.Write(b)
-	}
-}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 
-func startHealthResponder(ctx context.Context, ps *health.ProbeResponder, cfgs *configs.Configs, fatalErr chan<- error) (*http.Server, error) {
-	port := uint32(2000)
-	srv := health.Server(
-		ps, "", uint16(port),
-		health.Handler{
-			Method:  http.MethodGet,
-			Path:    "/-/health",
-			Handler: healthResponseHandler(ps, cfgs),
-		},
-	)
-
+	srv := &http.Server{Addr: ":2000", Handler: mux}
 	go func() {
-		defer slog.InfoContext(ctx, fmt.Sprintf("[http/healthresponder] :%d shutdown complete", port))
-		slog.InfoContext(ctx, fmt.Sprintf("[http/healthresponder] listening on :%d", port))
-		fatalErr <- srv.ListenAndServe()
+		slog.InfoContext(ctx, "[http/health] listening on :2000")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fatalErr <- err
+		}
 	}()
-
-	return srv, nil
+	return srv
 }
 
 func start(
 	ctx context.Context,
-	probestatus *health.ProbeResponder,
+	isReady *atomic.Bool,
 	cfgs *configs.Configs,
 	fatalErr chan<- error,
-) (hserver *xhttp.HTTP, gserver *grpc.GRPC) {
-	_ = ctx
+) (hserver *xhttp.HTTP, gserver *grpc.GRPC, healthServer *http.Server) {
 	pqdriver, err := postgres.NewPool(cfgs.Postgres())
 	if err != nil {
 		panic(errors.Wrap(err))
 	}
 
-	health.Start(time.Minute, probestatus, &health.Probe{
-		ID:               "postgres",
-		AffectedStatuses: []health.Statuskey{health.StatusLive, health.StatusReady},
-		Checker: health.CheckerFunc(func(ctx context.Context) error {
-			err := pqdriver.Ping(ctx)
-			if err != nil {
-				return errors.Wrap(err, "postgres ping failed")
-			}
-			return nil
-		}),
-	})
+	healthServer = startHealthServer(ctx, pqdriver, isReady, fatalErr)
 
 	userPGstore := users.NewPostgresStore(pqdriver, cfgs.UserPostgresTable())
 	userSvc := users.NewService(userPGstore)

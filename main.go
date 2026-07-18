@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"time"
 
@@ -13,8 +12,8 @@ import (
 	"log/slog"
 
 	"github.com/baobei23/goapp/internal/configs"
-	"github.com/baobei23/goapp/internal/pkg/health"
 	"github.com/baobei23/goapp/internal/pkg/sysignals"
+	"sync/atomic"
 )
 
 //	@title			GoApp API
@@ -81,8 +80,9 @@ func main() {
 		fatalErr            = make(chan error, 1)
 		shutdownGraceperiod = time.Minute
 		probeInterval       = time.Second * 3
-		probestatus         = health.New()
+		isReady             atomic.Bool
 	)
+	isReady.Store(true)
 
 	cfgs, err := configs.New()
 	if err != nil {
@@ -102,20 +102,13 @@ func main() {
 		defer tp.Shutdown(ctx)
 	}
 
-	var healthResponder *http.Server
-
-	healthResponder, err = startHealthResponder(ctx, probestatus, cfgs, fatalErr)
-	if err != nil {
-		panic(err)
-	}
-
-	hserver, gserver := start(ctx, probestatus, cfgs, fatalErr)
+	hserver, gserver, healthServer := start(ctx, &isReady, cfgs, fatalErr)
 
 	defer shutdown(
 		shutdownGraceperiod,
 		probeInterval,
-		probestatus,
-		healthResponder,
+		&isReady,
+		healthServer,
 		hserver,
 		gserver,
 	)
