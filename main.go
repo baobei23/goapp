@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	_ "github.com/baobei23/goapp/docs"
@@ -12,7 +14,6 @@ import (
 	"log/slog"
 
 	"github.com/baobei23/goapp/internal/configs"
-	"github.com/baobei23/goapp/internal/pkg/sysignals"
 	"sync/atomic"
 )
 
@@ -55,8 +56,8 @@ func recoverer() {
 		exitInfo = exitErr
 	}
 
-	// exiting after receiving a quit signal can be considered a *clean/successful* exit
-	if errors.Is(exitErr, sysignals.ErrSigQuit) {
+	// exiting without error is a clean exit
+	if exitErr == nil {
 		exitCode = 0
 	}
 
@@ -75,8 +76,10 @@ func recoverer() {
 
 func main() {
 	defer recoverer()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	var (
-		ctx                 = context.Background()
 		fatalErr            = make(chan error, 1)
 		shutdownGraceperiod = time.Minute
 		probeInterval       = time.Second * 3
@@ -112,5 +115,9 @@ func main() {
 		hserver,
 		gserver,
 	)
-	exitErr = <-fatalErr
+	select {
+	case exitErr = <-fatalErr:
+	case <-ctx.Done():
+		exitErr = nil
+	}
 }

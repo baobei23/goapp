@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"sync/atomic"
-	"time"
 
 	"github.com/naughtygopher/errors"
 
@@ -29,8 +28,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
-
-var now = time.Now()
 
 func setupTelemetry(cfgs *configs.Configs) *sdktrace.TracerProvider {
 	if !cfgs.EnableTracing && !cfgs.EnableMetrics {
