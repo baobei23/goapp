@@ -3,8 +3,9 @@ package jwt
 import (
 	"time"
 
+	"errors"
+
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/naughtygopher/errors"
 )
 
 type TokenManager struct {
@@ -64,13 +65,13 @@ func (tm *TokenManager) Validate(tokenStr string) (*Claims, error) {
 		return []byte(tm.SecretKey), nil
 	})
 	if err != nil {
-		return nil, errors.Unauthorized("invalid token")
+		return nil, errors.New("unauthorized: invalid token")
 	}
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
-	return nil, errors.Unauthorized("invalid claims")
+	return nil, errors.New("unauthorized: invalid claims")
 }
 
 // GetAccessExpiry returns the duration for access token expiration

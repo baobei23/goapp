@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"errors"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/naughtygopher/errors"
 )
 
 type pgstore struct {
@@ -32,9 +33,9 @@ func (ps *pgstore) GetUserByEmail(ctx context.Context, email string) (*User, err
 	err := row.Scan(&user.ID, &user.FullName, &user.Email, &user.Password)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.NotFoundErr(ErrUserEmailNotFound, email)
+			return nil, fmt.Errorf("%w: %s", ErrUserEmailNotFound, email)
 		}
-		return nil, errors.Wrap(err, "failed getting user info")
+		return nil, fmt.Errorf("failed getting user info: %w", err)
 	}
 
 	return user, nil
@@ -58,9 +59,9 @@ func (ps *pgstore) SaveUser(ctx context.Context, user *User) (string, error) {
 
 	if err != nil {
 		if strings.Contains(err.Error(), "violates unique constraint \"users_email_key\"") {
-			return "", errors.DuplicateErr(ErrUserEmailAlreadyExists, user.Email)
+			return "", fmt.Errorf("%w: %s", ErrUserEmailAlreadyExists, user.Email)
 		}
-		return "", errors.Wrap(err, "failed storing user info")
+		return "", fmt.Errorf("failed storing user info: %w", err)
 	}
 
 	return user.ID, nil
@@ -88,12 +89,12 @@ func (ps *pgstore) BulkSaveUser(ctx context.Context, users []User) error {
 		pgx.CopyFromRows(rows),
 	)
 	if err != nil {
-		return errors.Wrap(err, "failed inserting users")
+		return fmt.Errorf("failed inserting users: %w", err)
 	}
 
 	ulen := int64(len(users))
 	if inserted != ulen {
-		return errors.Internalf(
+		return fmt.Errorf(
 			"failed inserting %d out of %d users",
 			ulen-inserted,
 			ulen,

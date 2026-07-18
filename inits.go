@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"sync/atomic"
-
-	"github.com/naughtygopher/errors"
-
 	"log/slog"
 
 	"github.com/baobei23/goapp/cmd/server/grpc"
@@ -73,19 +70,19 @@ func startServers(svr api.Server, cfgs *configs.Configs, tm *jwt.TokenManager, f
 	hcfg, _ := cfgs.HTTP()
 	hserver, err := xhttp.NewService(hcfg, svr, tm)
 	if err != nil {
-		fatalErr <- errors.Wrap(err, "failed to initialize HTTP server")
+		fatalErr <- fmt.Errorf("failed to initialize HTTP server: %w", err)
 	}
 
 	go func() {
 		defer func() {
 			rec := recover()
 			if rec != nil {
-				fatalErr <- errors.New(fmt.Sprintf("%+v", rec))
+				fatalErr <- fmt.Errorf("%+v", rec)
 			}
 		}()
 		err = hserver.Start()
 		if err != nil {
-			fatalErr <- errors.Wrap(err, "failed to start HTTP server")
+			fatalErr <- fmt.Errorf("failed to start HTTP server: %w", err)
 		}
 	}()
 
@@ -129,7 +126,7 @@ func start(
 ) (hserver *xhttp.HTTP, gserver *grpc.GRPC, healthServer *http.Server) {
 	pqdriver, err := postgres.NewPool(cfgs.Postgres())
 	if err != nil {
-		panic(errors.Wrap(err))
+		panic(fmt.Errorf("failed to connect to postgres: %w", err))
 	}
 
 	healthServer = startHealthServer(ctx, pqdriver, isReady, fatalErr)

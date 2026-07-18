@@ -3,10 +3,9 @@ package usernotes
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
-
-	"github.com/naughtygopher/errors"
 )
 
 type Note struct {
@@ -20,20 +19,20 @@ type Note struct {
 
 func (note *Note) ValidateForCreate() error {
 	if note == nil {
-		return errors.Validation("empty note")
+		return errors.New("validation: empty note")
 	}
 
 	note.Sanitize()
 	if note.Title == "" {
-		return errors.Validation("note title cannot be empty")
+		return errors.New("validation: note title cannot be empty")
 	}
 
 	if note.Content == "" {
-		return errors.Validation("note content cannot be empty")
+		return errors.New("validation: note content cannot be empty")
 	}
 
 	if note.UserID == "" {
-		return errors.Validation("note creator cannot be anonymous")
+		return errors.New("validation: note creator cannot be anonymous")
 	}
 
 	return nil

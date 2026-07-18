@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/naughtygopher/errors"
 )
 
 var QueryTimeoutDuration = 5 * time.Second
@@ -41,7 +40,7 @@ func (ps *pgstore) GetNoteByID(ctx context.Context, userID string, noteID string
 		&usernote.UpdatedAt,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed getting user note")
+		return nil, fmt.Errorf("failed getting user note: %w", err)
 	}
 
 	return usernote, nil
@@ -64,7 +63,7 @@ func (ps *pgstore) SaveNote(ctx context.Context, note *Note) (string, error) {
 		note.UserID,
 	).Scan(&noteID)
 	if err != nil {
-		return "", errors.Wrap(err, "failed storing note")
+		return "", fmt.Errorf("failed storing note: %w", err)
 	}
 
 	return noteID, nil

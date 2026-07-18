@@ -7,17 +7,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/naughtygopher/errors"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-
-	"log/slog"
 
 	"github.com/baobei23/goapp/internal/api"
 	"github.com/baobei23/goapp/internal/pkg/jwt"
 )
-
-const errInvalidJsonInputMsg = "invalid JSON provided"
 
 // Handlers struct has all the dependencies required for HTTP handlers
 type Handlers struct {
@@ -32,25 +27,25 @@ func (h *Handlers) registerRoutes(r *gin.Engine) {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	//root
-	r.GET("/", errWrapper(h.HelloWorld))
+	r.GET("/", h.HelloWorld)
 
 	//auth
-	r.POST("/register", errWrapper(h.Register))
-	r.POST("/login", errWrapper(h.Login))
-	r.POST("/auth/refresh", errWrapper(h.RefreshToken))
+	r.POST("/register", h.Register)
+	r.POST("/login", h.Login)
+	r.POST("/auth/refresh", h.RefreshToken)
 
 	protected := r.Group("/")
 	protected.Use(h.AuthMiddleware())
 
 	//users
-	protected.GET("/users", errWrapper(h.ReadUserByEmail))
+	protected.GET("/users", h.ReadUserByEmail)
 
 	//usernotes
-	protected.POST("/usernotes", errWrapper(h.RegisterNote))
-	protected.GET("/usernotes/:noteID", errWrapper(h.ReadUserNote))
+	protected.POST("/usernotes", h.RegisterNote)
+	protected.GET("/usernotes/:noteID", h.ReadUserNote)
 }
 
-func (h *Handlers) HelloWorld(c *gin.Context) error {
+func (h *Handlers) HelloWorld(c *gin.Context) {
 	contentType := c.GetHeader("Content-Type")
 	switch contentType {
 	case "application/json":
@@ -66,27 +61,12 @@ func (h *Handlers) HelloWorld(c *gin.Context) error {
 			},
 		)
 		if err != nil {
-			return errors.InternalErr(err, "Inter server error")
+			Error(c, http.StatusInternalServerError, err)
+			return
 		}
 
 		c.Header("Content-Type", "text/html; charset=UTF-8")
 		c.String(http.StatusOK, buff.String())
-	}
-	return nil
-}
-
-func errWrapper(h func(c *gin.Context) error) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		err := h(c)
-		if err == nil {
-			return
-		}
-
-		status, msg, _ := errors.HTTPStatusCodeMessage(err)
-		Error(c, status, fmt.Errorf("%s", msg))
-		if status > 499 {
-			slog.ErrorContext(c.Request.Context(), "server error", "stacktrace", errors.Stacktrace(err))
-		}
 	}
 }
 
@@ -96,7 +76,7 @@ func loadHomeTemplate(basePath string) (*template.Template, error) {
 		fmt.Sprintf("%s/index.html", basePath),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed parsing templates")
+		return nil, fmt.Errorf("failed parsing templates: %w", err)
 	}
 
 	return home, nil

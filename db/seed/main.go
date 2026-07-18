@@ -5,13 +5,12 @@ import (
 
 	"github.com/baobei23/goapp/internal/configs"
 	"github.com/baobei23/goapp/internal/pkg/postgres"
-	"github.com/naughtygopher/errors"
 )
 
 func main() {
 	cfgs, err := configs.New()
 	if err != nil {
-		panic(errors.Wrap(err, "failed to load configurations"))
+		panic(fmt.Errorf("failed to load configurations: %w", err))
 	}
 
 	pgConfig := cfgs.Postgres()
@@ -19,7 +18,7 @@ func main() {
 
 	pqdriver, err := postgres.NewPool(pgConfig)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to connect to postgres"))
+		panic(fmt.Errorf("failed to connect to postgres: %w", err))
 	}
 	defer pqdriver.Close()
 	fmt.Println("Successfully connected to database!")

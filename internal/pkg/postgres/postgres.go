@@ -10,7 +10,6 @@ import (
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/naughtygopher/errors"
 
 	"go.opentelemetry.io/otel"
 )
@@ -65,7 +64,7 @@ func pgxPoolConfig(cfg *Config) (*pgxpool.Config, error) {
 	uri := cfg.ConnURL()
 	pgxconfig, err := pgx.ParseConfig(uri)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed parsing connection string")
+		return nil, fmt.Errorf("failed parsing connection string: %w", err)
 	}
 
 	if cfg.EnableTracing {
@@ -76,7 +75,7 @@ func pgxPoolConfig(cfg *Config) (*pgxpool.Config, error) {
 
 	poolconfig, err := pgxpool.ParseConfig(uri)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed parsing connection string for pool")
+		return nil, fmt.Errorf("failed parsing connection string for pool: %w", err)
 	}
 
 	poolconfig.ConnConfig = pgxconfig
@@ -118,7 +117,7 @@ func NewPool(cfg *Config) (*pgxpool.Pool, error) {
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), poolcfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create pgx pool")
+		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
 	}
 
 	return pool, nil

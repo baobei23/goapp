@@ -1,11 +1,11 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/baobei23/goapp/internal/users"
 	"github.com/gin-gonic/gin"
-	"github.com/naughtygopher/errors"
 )
 
 type RegisterRequest struct {
@@ -27,10 +27,11 @@ type RegisterRequest struct {
 //	@Failure		409		{object}	ErrorResponse
 //	@Failure		500		{object}	ErrorResponse
 //	@Router			/register [post]
-func (h *Handlers) Register(c *gin.Context) error {
+func (h *Handlers) Register(c *gin.Context) {
 	req := &RegisterRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		return errors.InputBodyErr(err, errInvalidJsonInputMsg)
+		Error(c, http.StatusBadRequest, err)
+		return
 	}
 
 	u := &users.User{
@@ -41,11 +42,11 @@ func (h *Handlers) Register(c *gin.Context) error {
 
 	createdUser, err := h.apis.Register(c.Request.Context(), u)
 	if err != nil {
-		return err
+		Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	JSON(c, http.StatusCreated, createdUser, nil)
-	return nil
 }
 
 type LoginRequest struct {
@@ -71,20 +72,23 @@ type LoginResponse struct {
 //	@Failure		400		{object}	ErrorResponse
 //	@Failure		500		{object}	ErrorResponse
 //	@Router			/login [post]
-func (h *Handlers) Login(c *gin.Context) error {
+func (h *Handlers) Login(c *gin.Context) {
 	req := &LoginRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		return errors.InputBodyErr(err, errInvalidJsonInputMsg)
+		Error(c, http.StatusBadRequest, err)
+		return
 	}
 
 	user, err := h.apis.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
-		return err
+		Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	accessToken, refreshToken, err := h.tm.GeneratePair(user.ID, user.Email)
 	if err != nil {
-		return errors.InternalErr(err, "failed to generate access token")
+		Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	JSON(c, http.StatusOK, &LoginResponse{
@@ -93,8 +97,6 @@ func (h *Handlers) Login(c *gin.Context) error {
 		ExpiresIn:    int64(h.tm.GetAccessExpiry().Seconds()),
 		User:         user,
 	}, nil)
-
-	return nil
 }
 
 type RefreshTokenRequest struct {
@@ -118,24 +120,28 @@ type RefreshTokenResponse struct {
 //	@Failure		400		{object}	ErrorResponse
 //	@Failure		500		{object}	ErrorResponse
 //	@Router			/auth/refresh [post]
-func (h *Handlers) RefreshToken(c *gin.Context) error {
+func (h *Handlers) RefreshToken(c *gin.Context) {
 	req := &RefreshTokenRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		return errors.InputBodyErr(err, errInvalidJsonInputMsg)
+		Error(c, http.StatusBadRequest, err)
+		return
 	}
 
 	claims, err := h.tm.Validate(req.RefreshToken)
 	if err != nil {
-		return err
+		Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	if claims.TokenType != "refresh" {
-		return errors.Unauthorized("invalid token type")
+		Error(c, http.StatusUnauthorized, errors.New("invalid token type"))
+		return
 	}
 
 	accessToken, refreshToken, err := h.tm.GeneratePair(claims.UserID, claims.Email)
 	if err != nil {
-		return errors.InternalErr(err, "failed to generate access token")
+		Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	JSON(c, http.StatusOK, &RefreshTokenResponse{
@@ -143,7 +149,4 @@ func (h *Handlers) RefreshToken(c *gin.Context) error {
 		RefreshToken: refreshToken,
 		ExpiresIn:    int64(h.tm.GetAccessExpiry().Seconds()),
 	}, nil)
-
-	return nil
-
 }

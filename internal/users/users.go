@@ -6,7 +6,9 @@ import (
 	"time"
 	"log/slog"
 
-	"github.com/naughtygopher/errors"
+	"errors"
+	"fmt"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -26,15 +28,15 @@ type User struct {
 // ValidateForCreate runs the validation required for when a user is being created. i.e. ID is not available
 func (us *User) ValidateForCreate() error {
 	if us.FullName == "" {
-		return errors.Validation("full name cannot be empty")
+		return errors.New("validation: full name cannot be empty")
 	}
 
 	if us.Email == "" {
-		return errors.Validation("email cannot be empty")
+		return errors.New("validation: email cannot be empty")
 	}
 
 	if len(us.Password) == 0 {
-		return errors.Validation("password cannot be empty")
+		return errors.New("validation: password cannot be empty")
 	}
 
 	return nil
@@ -77,7 +79,7 @@ func (us *Users) Register(ctx context.Context, user *User) (*User, error) {
 	}
 
 	if err := user.HashPassword(); err != nil {
-		return nil, errors.Wrap(err, "failed to hash password")
+		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	newID, err := us.store.SaveUser(ctx, user)
@@ -91,7 +93,7 @@ func (us *Users) Register(ctx context.Context, user *User) (*User, error) {
 
 func (us *Users) ReadByEmail(ctx context.Context, email string) (*User, error) {
 	if email == "" {
-		return nil, errors.Validation("no email provided")
+		return nil, errors.New("validation: no email provided")
 	}
 
 	return us.store.GetUserByEmail(ctx, email)

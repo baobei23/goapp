@@ -1,10 +1,10 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/naughtygopher/errors"
 )
 
 // readUserByEmail godoc
@@ -21,18 +21,18 @@ import (
 //	@Router			/users [get]
 //
 //	@security		ApiKeyAuth
-func (h *Handlers) ReadUserByEmail(c *gin.Context) error {
+func (h *Handlers) ReadUserByEmail(c *gin.Context) {
 	email := GetUserEmail(c)
 	if email == "" {
-		return errors.Unauthorized("unauthorized")
+		Error(c, http.StatusUnauthorized, errors.New("unauthorized"))
+		return
 	}
 
 	out, err := h.apis.ReadUserByEmail(c.Request.Context(), email)
 	if err != nil {
-		return err
+		Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	JSON(c, http.StatusOK, out, nil)
-
-	return nil
 }

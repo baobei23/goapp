@@ -9,7 +9,6 @@ import (
 	"time"
 
 	_ "github.com/baobei23/goapp/docs"
-	"github.com/naughtygopher/errors"
 
 	"log/slog"
 
@@ -89,7 +88,7 @@ func main() {
 
 	cfgs, err := configs.New()
 	if err != nil {
-		panic(errors.Wrap(err))
+		panic(fmt.Errorf("failed to load configurations: %w", err))
 	}
 
 	jsonHandler := slog.NewJSONHandler(os.Stdout, nil)

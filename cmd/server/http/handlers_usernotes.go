@@ -1,12 +1,12 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/baobei23/goapp/internal/usernotes"
-	"github.com/naughtygopher/errors"
 )
 
 type RegisterNoteRequest struct {
@@ -28,15 +28,17 @@ type RegisterNoteRequest struct {
 //	@Failure		500		{object}	ErrorResponse
 //	@Router			/usernotes [post]
 //	@Security		ApiKeyAuth
-func (h *Handlers) RegisterNote(c *gin.Context) error {
+func (h *Handlers) RegisterNote(c *gin.Context) {
 	userID := GetUserID(c)
 	if userID == "" {
-		return errors.Unauthorized("unauthorized")
+		Error(c, http.StatusUnauthorized, errors.New("unauthorized"))
+		return
 	}
 
 	req := &RegisterNoteRequest{}
 	if err := c.ShouldBindJSON(req); err != nil {
-		return errors.InputBodyErr(err, errInvalidJsonInputMsg)
+		Error(c, http.StatusBadRequest, err)
+		return
 	}
 
 	unote := &usernotes.Note{
@@ -47,12 +49,11 @@ func (h *Handlers) RegisterNote(c *gin.Context) error {
 
 	un, err := h.apis.RegisterNote(c.Request.Context(), unote)
 	if err != nil {
-		return err
+		Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	JSON(c, http.StatusCreated, un, nil)
-
-	return nil
 }
 
 // readUserNote godoc
@@ -69,23 +70,24 @@ func (h *Handlers) RegisterNote(c *gin.Context) error {
 //	@Failure		500		{object}	ErrorResponse
 //	@Router			/usernotes/{noteID} [get]
 //	@Security		ApiKeyAuth
-func (h *Handlers) ReadUserNote(c *gin.Context) error {
+func (h *Handlers) ReadUserNote(c *gin.Context) {
 	userID := GetUserID(c)
 	if userID == "" {
-		return errors.Unauthorized("unauthorized")
+		Error(c, http.StatusUnauthorized, errors.New("unauthorized"))
+		return
 	}
 
 	noteID := c.Param("noteID")
 	if noteID == "" {
-		return errors.InputBodyErr(nil, "noteID is required")
+		Error(c, http.StatusBadRequest, errors.New("noteID is required"))
+		return
 	}
 
 	un, err := h.apis.ReadUserNote(c.Request.Context(), userID, noteID)
 	if err != nil {
-		return err
+		Error(c, http.StatusInternalServerError, err)
+		return
 	}
 
 	JSON(c, http.StatusOK, un, nil)
-
-	return nil
 }
