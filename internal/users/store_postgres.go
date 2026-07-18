@@ -41,6 +41,31 @@ func (ps *pgstore) GetUserByEmail(ctx context.Context, email string) (*User, err
 	return user, nil
 }
 
+func (ps *pgstore) GetUserByID(ctx context.Context, id string) (*User, error) {
+	query := fmt.Sprintf(`
+		SELECT id, full_name, email, password
+		FROM %s
+		WHERE id = $1`,
+		ps.tableName,
+	)
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	user := new(User)
+
+	row := ps.pqdriver.QueryRow(ctx, query, id)
+	err := row.Scan(&user.ID, &user.FullName, &user.Email, &user.Password)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("%w: %s", ErrUserNotFound, id)
+		}
+		return nil, fmt.Errorf("failed getting user info: %w", err)
+	}
+
+	return user, nil
+}
+
 func (ps *pgstore) SaveUser(ctx context.Context, user *User) (string, error) {
 	query := fmt.Sprintf(`
 		INSERT INTO %s (id, full_name, email, password)
@@ -104,13 +129,13 @@ func (ps *pgstore) BulkSaveUser(ctx context.Context, users []User) error {
 	return nil
 }
 
-func (ps *pgstore) UpdatePassword(ctx context.Context, email string, newPassword []byte) error {
-	query := fmt.Sprintf(`UPDATE %s SET password = $1 WHERE email = $2`, ps.tableName)
+func (ps *pgstore) UpdatePassword(ctx context.Context, id string, newPassword []byte) error {
+	query := fmt.Sprintf(`UPDATE %s SET password = $1 WHERE id = $2`, ps.tableName)
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := ps.pqdriver.Exec(ctx, query, newPassword, email)
+	_, err := ps.pqdriver.Exec(ctx, query, newPassword, id)
 	if err != nil {
 		return fmt.Errorf("failed updating password: %w", err)
 	}

@@ -38,7 +38,7 @@ func (h *Handlers) registerRoutes(r *gin.Engine) {
 	protected.Use(h.AuthMiddleware())
 
 	//users
-	protected.GET("/users", h.ReadUserByEmail)
+	protected.GET("/users", h.ReadUserByID)
 	protected.PUT("/users/password", h.ChangePassword)
 
 	//usernotes

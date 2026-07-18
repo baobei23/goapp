@@ -7,10 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// readUserByEmail godoc
+// readUserByID godoc
 //
-//	@Summary		Read User By Email
-//	@Description	Read User By Email
+//	@Summary		Read User By ID
+//	@Description	Read User By ID
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
@@ -21,14 +21,14 @@ import (
 //	@Router			/users [get]
 //
 //	@security		ApiKeyAuth
-func (h *Handlers) ReadUserByEmail(c *gin.Context) {
-	email := GetUserEmail(c)
-	if email == "" {
+func (h *Handlers) ReadUserByID(c *gin.Context) {
+	id := GetUserID(c)
+	if id == "" {
 		Error(c, http.StatusUnauthorized, errors.New("unauthorized"))
 		return
 	}
 
-	out, err := h.apis.ReadUserByEmail(c.Request.Context(), email)
+	out, err := h.apis.ReadUserByID(c.Request.Context(), id)
 	if err != nil {
 		Error(c, http.StatusInternalServerError, err)
 		return
@@ -53,8 +53,8 @@ func (h *Handlers) ReadUserByEmail(c *gin.Context) {
 //
 //	@security		ApiKeyAuth
 func (h *Handlers) ChangePassword(c *gin.Context) {
-	email := GetUserEmail(c)
-	if email == "" {
+	id := GetUserID(c)
+	if id == "" {
 		Error(c, http.StatusUnauthorized, errors.New("unauthorized"))
 		return
 	}
@@ -68,7 +68,7 @@ func (h *Handlers) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.apis.ChangePassword(c.Request.Context(), email, req.OldPassword, req.NewPassword); err != nil {
+	if err := h.apis.ChangePassword(c.Request.Context(), id, req.OldPassword, req.NewPassword); err != nil {
 		if err.Error() == "invalid credentials" {
 			Error(c, http.StatusUnauthorized, err)
 			return

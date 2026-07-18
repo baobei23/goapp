@@ -11,8 +11,8 @@ import (
 type Server interface {
 	Register(ctx context.Context, user *users.User) (*users.User, error)
 	Login(ctx context.Context, email, password string) (*users.User, error)
-	ReadUserByEmail(ctx context.Context, email string) (*users.User, error)
-	ChangePassword(ctx context.Context, email, oldPassword, newPassword string) error
+	ReadUserByID(ctx context.Context, id string) (*users.User, error)
+	ChangePassword(ctx context.Context, id, oldPassword, newPassword string) error
 	RegisterNote(ctx context.Context, un *usernotes.Note) (*usernotes.Note, error)
 	ReadUserNote(ctx context.Context, userID string, noteID string) (*usernotes.Note, error)
 }

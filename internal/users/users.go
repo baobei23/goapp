@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	ErrUserNotFound           = errors.New("user not found")
 	ErrUserEmailNotFound      = errors.New("user with the email not found")
 	ErrUserEmailAlreadyExists = errors.New("user with the email already exists")
 	QueryTimeoutDuration      = 5 * time.Second
@@ -64,9 +65,10 @@ func (us *User) CheckPassword(plain string) bool {
 
 type store interface {
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	GetUserByID(ctx context.Context, id string) (*User, error)
 	SaveUser(ctx context.Context, user *User) (string, error)
 	BulkSaveUser(ctx context.Context, users []User) error
-	UpdatePassword(ctx context.Context, email string, newPassword []byte) error
+	UpdatePassword(ctx context.Context, id string, newPassword []byte) error
 }
 type Users struct {
 	store store
@@ -92,12 +94,12 @@ func (us *Users) Register(ctx context.Context, user *User) (*User, error) {
 	return user, nil
 }
 
-func (us *Users) ReadByEmail(ctx context.Context, email string) (*User, error) {
-	if email == "" {
-		return nil, errors.New("validation: no email provided")
+func (us *Users) ReadByID(ctx context.Context, id string) (*User, error) {
+	if id == "" {
+		return nil, errors.New("validation: no id provided")
 	}
 
-	return us.store.GetUserByEmail(ctx, email)
+	return us.store.GetUserByID(ctx, id)
 }
 
 func (us *Users) AsyncRegisters(ctx context.Context, users []User) error {
@@ -141,8 +143,8 @@ func (us *Users) Login(ctx context.Context, email, password string) (*User, erro
 	return user, nil
 }
 
-func (us *Users) ChangePassword(ctx context.Context, email, oldPassword, newPassword string) error {
-	user, err := us.store.GetUserByEmail(ctx, email)
+func (us *Users) ChangePassword(ctx context.Context, id, oldPassword, newPassword string) error {
+	user, err := us.store.GetUserByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -156,7 +158,7 @@ func (us *Users) ChangePassword(ctx context.Context, email, oldPassword, newPass
 		return fmt.Errorf("failed to hash new password: %w", err)
 	}
 
-	if err := us.store.UpdatePassword(ctx, email, user.Password); err != nil {
+	if err := us.store.UpdatePassword(ctx, id, user.Password); err != nil {
 		return fmt.Errorf("failed to update password: %w", err)
 	}
 

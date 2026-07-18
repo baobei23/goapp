@@ -20,9 +20,9 @@ func (a *API) Login(ctx context.Context, email, password string) (*users.User, e
 	return a.users.Login(ctx, email, password)
 }
 
-// ReadUserByEmail is the API to read an existing user by their email
-func (a *API) ReadUserByEmail(ctx context.Context, email string) (*users.User, error) {
-	u, err := a.users.ReadByEmail(ctx, email)
+// ReadUserByID is the API to read an existing user by their ID
+func (a *API) ReadUserByID(ctx context.Context, id string) (*users.User, error) {
+	u, err := a.users.ReadByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +30,8 @@ func (a *API) ReadUserByEmail(ctx context.Context, email string) (*users.User, e
 	return u, nil
 }
 
-func (a *API) ChangePassword(ctx context.Context, email, oldPassword, newPassword string) error {
-	return a.users.ChangePassword(ctx, email, oldPassword, newPassword)
+func (a *API) ChangePassword(ctx context.Context, id, oldPassword, newPassword string) error {
+	return a.users.ChangePassword(ctx, id, oldPassword, newPassword)
 }
 
 func (a *API) AsyncRegisters(ctx context.Context, users []users.User) error {
