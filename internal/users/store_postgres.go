@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/naughtygopher/errors"
@@ -28,39 +27,34 @@ func (ps *pgstore) GetUserByEmail(ctx context.Context, email string) (*User, err
 	defer cancel()
 
 	user := new(User)
-	uid := new(uuid.NullUUID)
 
 	row := ps.pqdriver.QueryRow(ctx, query, email)
-	err := row.Scan(uid, &user.FullName, &user.Email, &user.Password)
+	err := row.Scan(&user.ID, &user.FullName, &user.Email, &user.Password)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errors.NotFoundErr(ErrUserEmailNotFound, email)
 		}
 		return nil, errors.Wrap(err, "failed getting user info")
 	}
-	user.ID = uid.UUID.String()
 
 	return user, nil
 }
 
 func (ps *pgstore) SaveUser(ctx context.Context, user *User) (string, error) {
-	user.ID = ps.newUserID()
-
 	query := fmt.Sprintf(`
 		INSERT INTO %s (id, full_name, email, password)
-		VALUES ($1, $2, $3, $4)`,
+		VALUES (gen_random_uuid(), $1, $2, $3) RETURNING id`,
 		ps.tableName,
 	)
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := ps.pqdriver.Exec(ctx, query,
-		user.ID,
+	err := ps.pqdriver.QueryRow(ctx, query,
 		user.FullName,
 		user.Email,
 		user.Password,
-	)
+	).Scan(&user.ID)
 
 	if err != nil {
 		if strings.Contains(err.Error(), "violates unique constraint \"users_email_key\"") {
@@ -109,9 +103,6 @@ func (ps *pgstore) BulkSaveUser(ctx context.Context, users []User) error {
 	return nil
 }
 
-func (ps *pgstore) newUserID() string {
-	return uuid.NewString()
-}
 
 func NewPostgresStore(pqdriver *pgxpool.Pool, tablename string) *pgstore {
 	return &pgstore{

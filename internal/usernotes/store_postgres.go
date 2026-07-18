@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/naughtygopher/errors"
 )
@@ -49,23 +48,21 @@ func (ps *pgstore) GetNoteByID(ctx context.Context, userID string, noteID string
 }
 
 func (ps *pgstore) SaveNote(ctx context.Context, note *Note) (string, error) {
-	noteID := ps.newNoteID()
-
 	query := fmt.Sprintf(`
 		INSERT INTO %s (id, title, content, user_id)
-		VALUES ($1, $2, $3, $4)`,
+		VALUES (gen_random_uuid(), $1, $2, $3) RETURNING id`,
 		ps.tableName,
 	)
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := ps.pqdriver.Exec(ctx, query,
-		noteID,
+	var noteID string
+	err := ps.pqdriver.QueryRow(ctx, query,
 		note.Title,
 		note.Content,
 		note.UserID,
-	)
+	).Scan(&noteID)
 	if err != nil {
 		return "", errors.Wrap(err, "failed storing note")
 	}
@@ -73,9 +70,6 @@ func (ps *pgstore) SaveNote(ctx context.Context, note *Note) (string, error) {
 	return noteID, nil
 }
 
-func (ps *pgstore) newNoteID() string {
-	return uuid.New().String()
-}
 
 func NewPostgresStore(pqdriver *pgxpool.Pool, tableName string) store {
 	return &pgstore{
