@@ -10,9 +10,10 @@ import (
 	_ "github.com/baobei23/goapp/docs"
 	"github.com/naughtygopher/errors"
 
+	"log/slog"
+
 	"github.com/baobei23/goapp/internal/configs"
 	"github.com/baobei23/goapp/internal/pkg/health"
-	"github.com/baobei23/goapp/internal/pkg/logger"
 	"github.com/baobei23/goapp/internal/pkg/sysignals"
 )
 
@@ -65,9 +66,9 @@ func recoverer() {
 	// based on the server type (gRPC, HTTP etc.). But it's unclear *from the logs*
 	// if the server is up and running, if it exits for any reason
 	if exitCode == 0 {
-		logger.Info(ctx, fmt.Sprintf("shutdown complete: %+v", exitInfo))
+		slog.InfoContext(ctx, fmt.Sprintf("shutdown complete: %+v", exitInfo))
 	} else {
-		logger.Error(ctx, fmt.Sprintf("shutdown complete (exit: %d): %+v", exitCode, exitInfo))
+		slog.ErrorContext(ctx, fmt.Sprintf("shutdown complete (exit: %d): %+v", exitCode, exitInfo))
 	}
 
 	os.Exit(exitCode)
@@ -88,12 +89,12 @@ func main() {
 		panic(errors.Wrap(err))
 	}
 
-	logger.UpdateDefaultLogger(logger.New(
-		cfgs.AppName, cfgs.AppVersion, 0,
-		map[string]string{
-			"env": cfgs.Environment.String(),
-		}),
-	)
+	jsonHandler := slog.NewJSONHandler(os.Stdout, nil)
+	slog.SetDefault(slog.New(jsonHandler).With(
+		"app", cfgs.AppName,
+		"appVersion", cfgs.AppVersion,
+		"env", cfgs.Environment.String(),
+	))
 
 	// This needs to remain after log initialisation and before server initialisation.
 	ap := startAPM(ctx, cfgs)

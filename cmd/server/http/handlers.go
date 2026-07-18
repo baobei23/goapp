@@ -11,9 +11,10 @@ import (
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	"log/slog"
+
 	"github.com/baobei23/goapp/internal/api"
 	"github.com/baobei23/goapp/internal/pkg/jwt"
-	"github.com/baobei23/goapp/internal/pkg/logger"
 )
 
 const errInvalidJsonInputMsg = "invalid JSON provided"
@@ -84,7 +85,7 @@ func errWrapper(h func(c *gin.Context) error) gin.HandlerFunc {
 		status, msg, _ := errors.HTTPStatusCodeMessage(err)
 		Error(c, status, fmt.Errorf("%s", msg))
 		if status > 499 {
-			logger.Error(c.Request.Context(), errors.Stacktrace(err))
+			slog.ErrorContext(c.Request.Context(), "server error", "stacktrace", errors.Stacktrace(err))
 		}
 	}
 }

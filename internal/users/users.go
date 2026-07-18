@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 	"time"
+	"log/slog"
 
-	"github.com/baobei23/goapp/internal/pkg/logger"
 	"github.com/naughtygopher/errors"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -119,7 +119,7 @@ func (us *Users) AsyncRegisters(ctx context.Context, users []User) error {
 		ctx := context.TODO()
 		err := us.store.BulkSaveUser(context.TODO(), users)
 		if err != nil {
-			logger.Error(ctx, err, users)
+			slog.ErrorContext(ctx, "bulk save user failed", "error", err, "users", users)
 		}
 	}()
 

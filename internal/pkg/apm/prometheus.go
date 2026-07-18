@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"log/slog"
 
-	"github.com/baobei23/goapp/internal/pkg/logger"
 	"github.com/naughtygopher/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/exporters/prometheus"
@@ -30,9 +30,9 @@ func prometheusScraper(opts *Options) {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	logger.Info(context.Background(), fmt.Sprintf("[otel/http] starting prometheus metrics on :%d/-/metrics", opts.PrometheusScrapePort))
+	slog.InfoContext(context.Background(), fmt.Sprintf("[otel/http] starting prometheus metrics on :%d/-/metrics", opts.PrometheusScrapePort))
 	err := server.ListenAndServe()
 	if err != nil {
-		logger.Error(context.Background(), fmt.Sprintf("[otel/http] failed to start prometheus metrics on :%d/-/metrics ; %+v", opts.PrometheusScrapePort, err))
+		slog.ErrorContext(context.Background(), fmt.Sprintf("[otel/http] failed to start prometheus metrics on :%d/-/metrics ; %+v", opts.PrometheusScrapePort, err))
 	}
 }

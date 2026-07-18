@@ -13,10 +13,11 @@ import (
 	xhttp "github.com/baobei23/goapp/cmd/server/http"
 	"github.com/baobei23/goapp/internal/api"
 	"github.com/baobei23/goapp/internal/configs"
+	"log/slog"
+
 	"github.com/baobei23/goapp/internal/pkg/apm"
 	"github.com/baobei23/goapp/internal/pkg/health"
 	"github.com/baobei23/goapp/internal/pkg/jwt"
-	"github.com/baobei23/goapp/internal/pkg/logger"
 	"github.com/baobei23/goapp/internal/pkg/postgres"
 	"github.com/baobei23/goapp/internal/usernotes"
 	"github.com/baobei23/goapp/internal/users"
@@ -100,8 +101,8 @@ func startHealthResponder(ctx context.Context, ps *health.ProbeResponder, cfgs *
 	)
 
 	go func() {
-		defer logger.Info(ctx, fmt.Sprintf("[http/healthresponder] :%d shutdown complete", port))
-		logger.Info(ctx, fmt.Sprintf("[http/healthresponder] listening on :%d", port))
+		defer slog.InfoContext(ctx, fmt.Sprintf("[http/healthresponder] :%d shutdown complete", port))
+		slog.InfoContext(ctx, fmt.Sprintf("[http/healthresponder] listening on :%d", port))
 		fatalErr <- srv.ListenAndServe()
 	}()
 

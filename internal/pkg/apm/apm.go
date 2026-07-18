@@ -5,8 +5,8 @@ import (
 	"context"
 	"strings"
 	"time"
+	"log/slog"
 
-	"github.com/baobei23/goapp/internal/pkg/logger"
 	"github.com/naughtygopher/errors"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -148,7 +148,7 @@ func SetGlobal(apm *APM) {
 // Global gets global apm instance
 func Global() *APM {
 	if global == nil {
-		logger.Error(context.Background(), "APM access attempt before initialisation is a bug")
+		slog.ErrorContext(context.Background(), "APM access attempt before initialisation is a bug")
 	}
 	return global
 }

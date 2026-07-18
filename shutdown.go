@@ -9,9 +9,10 @@ import (
 
 	"github.com/baobei23/goapp/cmd/server/grpc"
 	xhttp "github.com/baobei23/goapp/cmd/server/http"
+	"log/slog"
+
 	"github.com/baobei23/goapp/internal/pkg/apm"
 	"github.com/baobei23/goapp/internal/pkg/health"
-	"github.com/baobei23/goapp/internal/pkg/logger"
 )
 
 func shutdown(
@@ -63,7 +64,7 @@ func shutdown(
 		"shutdown",
 		fmt.Sprintf("initiated: %s", time.Now().Format(time.RFC3339)),
 	)
-	logger.Info(ctx, "initiating shutdown")
+	slog.InfoContext(ctx, "initiating shutdown")
 	shutdownDependenciesAndServices(ctx, httpServer, grpcServer, apmIns)
 }
 
