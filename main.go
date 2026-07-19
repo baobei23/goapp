@@ -30,7 +30,7 @@ import (
 
 //	@BasePath					/
 //
-//	@securityDefinitions.apikey	ApiKeyAuth
+//	@securityDefinitions.apikey	BearerAuth
 //	@in							header
 //	@name						Authorization
 //	@description				Bearer token
