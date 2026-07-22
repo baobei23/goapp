@@ -200,19 +200,21 @@ func (h *Handlers) Logout(c *gin.Context) {
 
 	c.SetCookie("refreshToken", "", -1, "/", "", false, true)
 
+	var loggedOut string = "logged out"
+
 	if token == "" {
-		JSON(c, http.StatusOK, "logged out", nil)
+		JSON(c, http.StatusOK, loggedOut, nil)
 		return
 	}
 
 	claims, err := h.tm.Validate(token)
 	if err != nil || claims.TokenType != "refresh" {
 		// Ignore validation errors on logout
-		JSON(c, http.StatusOK, "logged out", nil)
+		JSON(c, http.StatusOK, loggedOut, nil)
 		return
 	}
 
 	_ = h.apis.RevokeRefreshToken(c.Request.Context(), claims.ID)
 
-	JSON(c, http.StatusOK, "logged out", nil)
+	JSON(c, http.StatusOK, loggedOut, nil)
 }
