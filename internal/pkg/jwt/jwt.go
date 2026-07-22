@@ -9,6 +9,11 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	TokenTypeAccess  = "access"
+	TokenTypeRefresh = "refresh"
+)
+
 type TokenManager struct {
 	SecretKey     string        `json:"secretKey"`
 	AccessExpiry  time.Duration `json:"accessExpiry"`
@@ -32,13 +37,13 @@ func NewManager(secret string, accessMinutes, refreshHours int) *TokenManager {
 
 // GeneratePair generates both access and refresh tokens
 func (tm *TokenManager) GeneratePair(userID, email string) (accessToken, refreshToken, jti string, err error) {
-	accessToken, err = tm.generate(userID, email, "access", tm.AccessExpiry, "")
+	accessToken, err = tm.generate(userID, email, TokenTypeAccess, tm.AccessExpiry, "")
 	if err != nil {
 		return "", "", "", err
 	}
 
 	jti = uuid.NewString()
-	refreshToken, err = tm.generate(userID, email, "refresh", tm.RefreshExpiry, jti)
+	refreshToken, err = tm.generate(userID, email, TokenTypeRefresh, tm.RefreshExpiry, jti)
 	if err != nil {
 		return "", "", "", err
 	}
