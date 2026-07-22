@@ -12,14 +12,29 @@ spec:
       labels:
         app: goapp
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: goapp
-          image: goapp:latest
+          image: goapp:v1.0.0
           imagePullPolicy: Never
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           ports:
             - containerPort: 8080
             - containerPort: 2000
             - containerPort: 9090
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
           livenessProbe:
             httpGet:
               path: /-/live
@@ -31,12 +46,6 @@ spec:
               path: /-/ready
               port: 2000
             initialDelaySeconds: 5
-            periodSeconds: 10
-          startupProbe:
-            httpGet:
-              path: /-/startup
-              port: 2000
-            failureThreshold: 30
             periodSeconds: 10
           env:
             - name: ENV
