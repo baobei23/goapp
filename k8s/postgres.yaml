@@ -40,13 +40,22 @@ spec:
               cpu: "1000m"
               memory: "1Gi"
               ephemeral-storage: "2Gi"
+          startupProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 15
           livenessProbe:
             exec:
               command:
                 - pg_isready
                 - -U
                 - postgres
-            initialDelaySeconds: 15
+            initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             exec:
