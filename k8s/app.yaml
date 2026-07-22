@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: goapp
+  namespace: default
 spec:
   replicas: 1
   selector:
@@ -12,15 +13,19 @@ spec:
       labels:
         app: goapp
     spec:
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: goapp
           image: goapp:v1.0.0
           imagePullPolicy: Never
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
@@ -32,9 +37,11 @@ spec:
             requests:
               cpu: "100m"
               memory: "128Mi"
+              ephemeral-storage: "1Gi"
             limits:
               cpu: "500m"
               memory: "256Mi"
+              ephemeral-storage: "2Gi"
           livenessProbe:
             httpGet:
               path: /-/live
@@ -113,11 +120,18 @@ spec:
                 secretKeyRef:
                   name: jwt-credentials
                   key: JWT_SECRET
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: goapp
+  namespace: default
 spec:
   type: ClusterIP # Change to LoadBalancer if not using ingress
   selector:
