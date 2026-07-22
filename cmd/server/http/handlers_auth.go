@@ -56,7 +56,6 @@ type LoginRequest struct {
 }
 type LoginResponse struct {
 	AccessToken string      `json:"accessToken"`
-	ExpiresIn   int64       `json:"expiresIn"`
 	User        *users.User `json:"user"`
 }
 
@@ -101,7 +100,6 @@ func (h *Handlers) Login(c *gin.Context) {
 
 	JSON(c, http.StatusOK, &LoginResponse{
 		AccessToken: accessToken,
-		ExpiresIn:   int64(h.tm.GetAccessExpiry().Seconds()),
 		User:        user,
 	}, nil)
 }
@@ -111,7 +109,6 @@ type RefreshTokenRequest struct {
 }
 type RefreshTokenResponse struct {
 	AccessToken string `json:"accessToken"`
-	ExpiresIn   int64  `json:"expiresIn"`
 }
 
 // refreshToken godoc
@@ -174,7 +171,6 @@ func (h *Handlers) RefreshToken(c *gin.Context) {
 
 	JSON(c, http.StatusOK, &RefreshTokenResponse{
 		AccessToken: accessToken,
-		ExpiresIn:   int64(h.tm.GetAccessExpiry().Seconds()),
 	}, nil)
 }
 

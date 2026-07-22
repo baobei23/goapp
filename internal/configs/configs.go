@@ -69,7 +69,7 @@ func (cfg *Configs) JWT() *jwt.TokenManager {
 	return &jwt.TokenManager{
 		SecretKey:     os.Getenv("JWT_SECRET"),
 		AccessExpiry:  15 * time.Minute,
-		RefreshExpiry: 24 * time.Hour,
+		RefreshExpiry: 30 * 24 * time.Hour,
 	}
 }
 

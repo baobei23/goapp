@@ -22,6 +22,7 @@ services:
       ENV: ${ENV}
       APP_NAME: ${APP_NAME}
       APP_VERSION: ${APP_VERSION}
+      JWT_SECRET: ${JWT_SECRET}
       TEMPLATES_BASEPATH: /app/cmd/server/http/web/templates
       POSTGRES_HOST: postgres
       POSTGRES_PORT: ${POSTGRES_PORT}
