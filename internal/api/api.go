@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"time"
 
 	"github.com/baobei23/goapp/internal/usernotes"
 	"github.com/baobei23/goapp/internal/users"
@@ -15,6 +16,9 @@ type Server interface {
 	ChangePassword(ctx context.Context, id, oldPassword, newPassword string) error
 	RegisterNote(ctx context.Context, un *usernotes.Note) (*usernotes.Note, error)
 	ReadUserNote(ctx context.Context, userID string, noteID string) (*usernotes.Note, error)
+	SaveRefreshToken(ctx context.Context, jti, userID string, expiresAt time.Time) error
+	CheckRefreshToken(ctx context.Context, jti string) (bool, error)
+	RevokeRefreshToken(ctx context.Context, jti string) error
 }
 
 // Subscriber has all the methods required to run the subscriber

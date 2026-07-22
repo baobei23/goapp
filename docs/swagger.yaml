@@ -27,8 +27,6 @@ definitions:
         type: string
       expiresIn:
         type: integer
-      refreshToken:
-        type: string
       user:
         $ref: '#/definitions/users.User'
     type: object
@@ -36,8 +34,6 @@ definitions:
     properties:
       refreshToken:
         type: string
-    required:
-    - refreshToken
     type: object
   github_com_baobei23_goapp_cmd_server_http.RefreshTokenResponse:
     properties:
@@ -45,8 +41,6 @@ definitions:
         type: string
       expiresIn:
         type: integer
-      refreshToken:
-        type: string
     type: object
   github_com_baobei23_goapp_cmd_server_http.RegisterNoteRequest:
     properties:
@@ -101,8 +95,6 @@ definitions:
         type: string
       expiresIn:
         type: integer
-      refreshToken:
-        type: string
       user:
         $ref: '#/definitions/users.User'
     type: object
@@ -110,8 +102,6 @@ definitions:
     properties:
       refreshToken:
         type: string
-    required:
-    - refreshToken
     type: object
   server_http.RefreshTokenResponse:
     properties:
@@ -119,8 +109,6 @@ definitions:
         type: string
       expiresIn:
         type: integer
-      refreshToken:
-        type: string
     type: object
   server_http.RegisterNoteRequest:
     properties:
@@ -184,6 +172,37 @@ info:
   termsOfService: http://swagger.io/terms/
   title: GoApp API
 paths:
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logout by revoking refresh token
+      parameters:
+      - description: Refresh Token Payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
+      summary: Logout
+      tags:
+      - Auth
   /auth/refresh:
     post:
       consumes:

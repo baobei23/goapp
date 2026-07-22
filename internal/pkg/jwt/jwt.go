@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type TokenManager struct {
@@ -30,21 +31,22 @@ func NewManager(secret string, accessMinutes, refreshHours int) *TokenManager {
 }
 
 // GeneratePair generates both access and refresh tokens
-func (tm *TokenManager) GeneratePair(userID, email string) (accessToken, refreshToken string, err error) {
-	accessToken, err = tm.generate(userID, email, "access", tm.AccessExpiry)
+func (tm *TokenManager) GeneratePair(userID, email string) (accessToken, refreshToken, jti string, err error) {
+	accessToken, err = tm.generate(userID, email, "access", tm.AccessExpiry, "")
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
-	refreshToken, err = tm.generate(userID, email, "refresh", tm.RefreshExpiry)
+	jti = uuid.NewString()
+	refreshToken, err = tm.generate(userID, email, "refresh", tm.RefreshExpiry, jti)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
-	return accessToken, refreshToken, nil
+	return accessToken, refreshToken, jti, nil
 }
 
-func (tm *TokenManager) generate(userID, email, tokenType string, expiry time.Duration) (string, error) {
+func (tm *TokenManager) generate(userID, email, tokenType string, expiry time.Duration, jti string) (string, error) {
 	claims := Claims{
 		UserID:    userID,
 		Email:     email,
@@ -52,6 +54,7 @@ func (tm *TokenManager) generate(userID, email, tokenType string, expiry time.Du
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ID:        jti,
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

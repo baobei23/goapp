@@ -33,6 +33,7 @@ func (h *Handlers) registerRoutes(r *gin.Engine) {
 	r.POST("/register", h.Register)
 	r.POST("/login", h.Login)
 	r.POST("/auth/refresh", h.RefreshToken)
+	r.POST("/auth/logout", h.Logout)
 
 	protected := r.Group("/")
 	protected.Use(h.AuthMiddleware())

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"time"
 
 	"github.com/baobei23/goapp/internal/users"
 )
@@ -36,4 +37,16 @@ func (a *API) ChangePassword(ctx context.Context, id, oldPassword, newPassword s
 
 func (a *API) AsyncRegisters(ctx context.Context, users []users.User) error {
 	return a.users.AsyncRegisters(ctx, users)
+}
+
+func (a *API) SaveRefreshToken(ctx context.Context, jti, userID string, expiresAt time.Time) error {
+	return a.users.SaveRefreshToken(ctx, jti, userID, expiresAt)
+}
+
+func (a *API) CheckRefreshToken(ctx context.Context, jti string) (bool, error) {
+	return a.users.CheckRefreshToken(ctx, jti)
+}
+
+func (a *API) RevokeRefreshToken(ctx context.Context, jti string) error {
+	return a.users.RevokeRefreshToken(ctx, jti)
 }

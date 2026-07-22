@@ -24,6 +24,58 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/logout": {
+            "post": {
+                "description": "Logout by revoking refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout",
+                "parameters": [
+                    {
+                        "description": "Refresh Token Payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.RefreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/refresh": {
             "post": {
                 "description": "Use valid refresh token to get new access token pair",
@@ -505,9 +557,6 @@ const docTemplate = `{
                 "expiresIn": {
                     "type": "integer"
                 },
-                "refreshToken": {
-                    "type": "string"
-                },
                 "user": {
                     "$ref": "#/definitions/users.User"
                 }
@@ -515,9 +564,6 @@ const docTemplate = `{
         },
         "github_com_baobei23_goapp_cmd_server_http.RefreshTokenRequest": {
             "type": "object",
-            "required": [
-                "refreshToken"
-            ],
             "properties": {
                 "refreshToken": {
                     "type": "string"
@@ -532,9 +578,6 @@ const docTemplate = `{
                 },
                 "expiresIn": {
                     "type": "integer"
-                },
-                "refreshToken": {
-                    "type": "string"
                 }
             }
         },
@@ -615,9 +658,6 @@ const docTemplate = `{
                 "expiresIn": {
                     "type": "integer"
                 },
-                "refreshToken": {
-                    "type": "string"
-                },
                 "user": {
                     "$ref": "#/definitions/users.User"
                 }
@@ -625,9 +665,6 @@ const docTemplate = `{
         },
         "server_http.RefreshTokenRequest": {
             "type": "object",
-            "required": [
-                "refreshToken"
-            ],
             "properties": {
                 "refreshToken": {
                     "type": "string"
@@ -642,9 +679,6 @@ const docTemplate = `{
                 },
                 "expiresIn": {
                     "type": "integer"
-                },
-                "refreshToken": {
-                    "type": "string"
                 }
             }
         },

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"errors"
 
@@ -140,6 +141,43 @@ func (ps *pgstore) UpdatePassword(ctx context.Context, id string, newPassword []
 		return fmt.Errorf("failed updating password: %w", err)
 	}
 
+	return nil
+}
+
+func (ps *pgstore) SaveRefreshToken(ctx context.Context, jti, userID string, expiresAt time.Time) error {
+	query := `INSERT INTO refresh_tokens (jti, user_id, expires_at) VALUES ($1, $2, $3)`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := ps.pqdriver.Exec(ctx, query, jti, userID, expiresAt)
+	if err != nil {
+		return fmt.Errorf("failed saving refresh token: %w", err)
+	}
+	return nil
+}
+
+func (ps *pgstore) CheckRefreshToken(ctx context.Context, jti string) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM refresh_tokens WHERE jti = $1)`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	var exists bool
+	err := ps.pqdriver.QueryRow(ctx, query, jti).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed checking refresh token: %w", err)
+	}
+	return exists, nil
+}
+
+func (ps *pgstore) RevokeRefreshToken(ctx context.Context, jti string) error {
+	query := `DELETE FROM refresh_tokens WHERE jti = $1`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := ps.pqdriver.Exec(ctx, query, jti)
+	if err != nil {
+		return fmt.Errorf("failed revoking refresh token: %w", err)
+	}
 	return nil
 }
 

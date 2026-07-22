@@ -69,6 +69,10 @@ type store interface {
 	SaveUser(ctx context.Context, user *User) (string, error)
 	BulkSaveUser(ctx context.Context, users []User) error
 	UpdatePassword(ctx context.Context, id string, newPassword []byte) error
+
+	SaveRefreshToken(ctx context.Context, jti, userID string, expiresAt time.Time) error
+	CheckRefreshToken(ctx context.Context, jti string) (bool, error)
+	RevokeRefreshToken(ctx context.Context, jti string) error
 }
 type Users struct {
 	store store
@@ -163,6 +167,18 @@ func (us *Users) ChangePassword(ctx context.Context, id, oldPassword, newPasswor
 	}
 
 	return nil
+}
+
+func (us *Users) SaveRefreshToken(ctx context.Context, jti, userID string, expiresAt time.Time) error {
+	return us.store.SaveRefreshToken(ctx, jti, userID, expiresAt)
+}
+
+func (us *Users) CheckRefreshToken(ctx context.Context, jti string) (bool, error) {
+	return us.store.CheckRefreshToken(ctx, jti)
+}
+
+func (us *Users) RevokeRefreshToken(ctx context.Context, jti string) error {
+	return us.store.RevokeRefreshToken(ctx, jti)
 }
 
 func NewService(store store) *Users {

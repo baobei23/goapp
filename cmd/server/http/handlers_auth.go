@@ -3,6 +3,7 @@ package http
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/baobei23/goapp/internal/users"
 	"github.com/gin-gonic/gin"
@@ -54,10 +55,9 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 type LoginResponse struct {
-	AccessToken  string      `json:"accessToken"`
-	RefreshToken string      `json:"refreshToken"`
-	ExpiresIn    int64       `json:"expiresIn"`
-	User         *users.User `json:"user"`
+	AccessToken string      `json:"accessToken"`
+	ExpiresIn   int64       `json:"expiresIn"`
+	User        *users.User `json:"user"`
 }
 
 // login godoc
@@ -85,27 +85,33 @@ func (h *Handlers) Login(c *gin.Context) {
 		return
 	}
 
-	accessToken, refreshToken, err := h.tm.GeneratePair(user.ID, user.Email)
+	accessToken, refreshToken, jti, err := h.tm.GeneratePair(user.ID, user.Email)
 	if err != nil {
 		Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
+	err = h.apis.SaveRefreshToken(c.Request.Context(), jti, user.ID, time.Now().Add(h.tm.GetRefreshExpiry()))
+	if err != nil {
+		Error(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	c.SetCookie("refreshToken", refreshToken, int(h.tm.GetRefreshExpiry().Seconds()), "/", "", false, true)
+
 	JSON(c, http.StatusOK, &LoginResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		ExpiresIn:    int64(h.tm.GetAccessExpiry().Seconds()),
-		User:         user,
+		AccessToken: accessToken,
+		ExpiresIn:   int64(h.tm.GetAccessExpiry().Seconds()),
+		User:        user,
 	}, nil)
 }
 
 type RefreshTokenRequest struct {
-	RefreshToken string `json:"refreshToken" binding:"required"`
+	RefreshToken string `json:"refreshToken"`
 }
 type RefreshTokenResponse struct {
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
-	ExpiresIn    int64  `json:"expiresIn"`
+	AccessToken string `json:"accessToken"`
+	ExpiresIn   int64  `json:"expiresIn"`
 }
 
 // refreshToken godoc
@@ -122,12 +128,18 @@ type RefreshTokenResponse struct {
 //	@Router			/auth/refresh [post]
 func (h *Handlers) RefreshToken(c *gin.Context) {
 	req := &RefreshTokenRequest{}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		Error(c, http.StatusBadRequest, err)
+	_ = c.ShouldBindJSON(&req)
+
+	token := req.RefreshToken
+	if token == "" {
+		token, _ = c.Cookie("refreshToken")
+	}
+	if token == "" {
+		Error(c, http.StatusBadRequest, errors.New("refresh token required"))
 		return
 	}
 
-	claims, err := h.tm.Validate(req.RefreshToken)
+	claims, err := h.tm.Validate(token)
 	if err != nil {
 		Error(c, http.StatusInternalServerError, err)
 		return
@@ -138,15 +150,69 @@ func (h *Handlers) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	accessToken, refreshToken, err := h.tm.GeneratePair(claims.UserID, claims.Email)
+	exists, err := h.apis.CheckRefreshToken(c.Request.Context(), claims.ID)
+	if err != nil || !exists {
+		Error(c, http.StatusUnauthorized, errors.New("refresh token invalid or revoked"))
+		return
+	}
+
+	_ = h.apis.RevokeRefreshToken(c.Request.Context(), claims.ID)
+
+	accessToken, refreshToken, newJti, err := h.tm.GeneratePair(claims.UserID, claims.Email)
 	if err != nil {
 		Error(c, http.StatusInternalServerError, err)
 		return
 	}
 
+	err = h.apis.SaveRefreshToken(c.Request.Context(), newJti, claims.UserID, time.Now().Add(h.tm.GetRefreshExpiry()))
+	if err != nil {
+		Error(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	c.SetCookie("refreshToken", refreshToken, int(h.tm.GetRefreshExpiry().Seconds()), "/", "", false, true)
+
 	JSON(c, http.StatusOK, &RefreshTokenResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		ExpiresIn:    int64(h.tm.GetAccessExpiry().Seconds()),
+		AccessToken: accessToken,
+		ExpiresIn:   int64(h.tm.GetAccessExpiry().Seconds()),
 	}, nil)
+}
+
+// logout godoc
+//
+//	@Summary		Logout
+//	@Description	Logout by revoking refresh token
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		RefreshTokenRequest	true	"Refresh Token Payload"
+//	@Success		200		{object}	BaseResponse{data=string}
+//	@Failure		400		{object}	ErrorResponse
+//	@Router			/auth/logout [post]
+func (h *Handlers) Logout(c *gin.Context) {
+	req := &RefreshTokenRequest{}
+	_ = c.ShouldBindJSON(&req)
+
+	token := req.RefreshToken
+	if token == "" {
+		token, _ = c.Cookie("refreshToken")
+	}
+
+	c.SetCookie("refreshToken", "", -1, "/", "", false, true)
+
+	if token == "" {
+		JSON(c, http.StatusOK, "logged out", nil)
+		return
+	}
+
+	claims, err := h.tm.Validate(token)
+	if err != nil || claims.TokenType != "refresh" {
+		// Ignore validation errors on logout
+		JSON(c, http.StatusOK, "logged out", nil)
+		return
+	}
+
+	_ = h.apis.RevokeRefreshToken(c.Request.Context(), claims.ID)
+
+	JSON(c, http.StatusOK, "logged out", nil)
 }
