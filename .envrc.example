@@ -13,6 +13,13 @@ export POSTGRES_USERNAME=
 export POSTGRES_PASSWORD=
 export POSTGRES_SSLMODE=
 
+# Aerospike Configuration
+export AEROSPIKE_HOST=localhost
+export AEROSPIKE_PORT=3000
+export AEROSPIKE_NAMESPACE=test
+export AEROSPIKE_USERNAME=
+export AEROSPIKE_PASSWORD=
+
 # Web Configuration
 export TEMPLATES_BASEPATH=./cmd/server/http/web/templates
 

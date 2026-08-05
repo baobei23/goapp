@@ -31,12 +31,48 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       ENABLE_METRICS: ${ENABLE_METRICS}
       ENABLE_TRACING: ${ENABLE_TRACING}
+      AEROSPIKE_HOST: aerospike
+      AEROSPIKE_PORT: 3000
+      AEROSPIKE_NAMESPACE: test
     ports:
       - '8080:8080'
       - '2000:2000'
       - '9090:9090'
     depends_on:
       - postgres
+      - aerospike
+    networks:
+      - goapp_network
+
+  aerospike:
+    image: aerospike/aerospike-server:8.1
+    container_name: aerospike-server
+    ports:
+      - "3000:3000" # Client connection port
+      - "3001:3001" # Fabric clustering port
+      - "3002:3002" # Heartbeat port
+    volumes:
+      # NOTE: the stock config keeps namespace `test` in memory, so nothing is
+      # written here and tokens are lost on restart. Fine for local dev; mount
+      # an aerospike.conf with a persistent storage-engine if you need more.
+      - aerospike-data:/opt/aerospike/data
+      # UNCOMMENT below lines if using Enterprise Edition to mount your feature key
+      # - ./aerospike.conf:/etc/aerospike/aerospike.conf
+      # - ./features.conf:/etc/aerospike/features.conf
+    networks:
+      - goapp_network
+
+  # CLI tools (aql, asadm). Off by default -- `docker compose --profile tools up -d`,
+  # then `docker compose exec aerospike-tools aql -h aerospike`.
+  aerospike-tools:
+    image: aerospike/aerospike-tools:latest
+    container_name: aerospike-tools
+    profiles: [tools]
+    depends_on:
+      - aerospike
+    environment:
+      - AEROSPIKE_HOST=aerospike
+    entrypoint: ["tail", "-f", "/dev/null"] # Keeps the container running
     networks:
       - goapp_network
 
@@ -45,3 +81,4 @@ networks:
 
 volumes:
   postgres_data:
+  aerospike-data:

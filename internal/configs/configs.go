@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/baobei23/goapp/cmd/server/http"
+	"github.com/baobei23/goapp/internal/pkg/aerospike"
 	"github.com/baobei23/goapp/internal/pkg/jwt"
 	"github.com/baobei23/goapp/internal/pkg/postgres"
 )
@@ -63,6 +64,17 @@ func (cfg *Configs) Postgres() *postgres.Config {
 		IdleTimeout:   time.Minute,
 		DialTimeout:   time.Second * 3,
 		EnableTracing: cfg.EnableTracing,
+	}
+}
+
+func (cfg *Configs) Aerospike() *aerospike.Config {
+	return &aerospike.Config{
+		Host:      os.Getenv("AEROSPIKE_HOST"),
+		Port:      os.Getenv("AEROSPIKE_PORT"),
+		Namespace: os.Getenv("AEROSPIKE_NAMESPACE"),
+
+		Username: os.Getenv("AEROSPIKE_USERNAME"),
+		Password: os.Getenv("AEROSPIKE_PASSWORD"),
 	}
 }
 

@@ -148,7 +148,13 @@ func (h *Handlers) RefreshToken(c *gin.Context) {
 	}
 
 	exists, err := h.apis.CheckRefreshToken(c.Request.Context(), claims.ID)
-	if err != nil || !exists {
+	if err != nil {
+		// Store trouble is not the same as a revoked token: answering 401 makes
+		// the client discard a still-valid token, turning a blip into a logout.
+		Error(c, http.StatusServiceUnavailable, errors.New("token store unavailable, please retry"))
+		return
+	}
+	if !exists {
 		Error(c, http.StatusUnauthorized, errors.New("refresh token invalid or revoked"))
 		return
 	}

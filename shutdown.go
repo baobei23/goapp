@@ -11,6 +11,8 @@ import (
 
 	"github.com/baobei23/goapp/cmd/server/grpc"
 	xhttp "github.com/baobei23/goapp/cmd/server/http"
+
+	as "github.com/aerospike/aerospike-client-go/v8"
 )
 
 func shutdown(
@@ -20,6 +22,7 @@ func shutdown(
 	healthResp *http.Server,
 	httpServer *xhttp.HTTP,
 	grpcServer *grpc.GRPC,
+	asClient *as.Client,
 ) {
 	// set the service as Not ready as soon as it's exiting main
 	isReady.Store(false)
@@ -56,13 +59,14 @@ func shutdown(
 	// in this case, the Kuberenetes probe interval is assumed to be 2 seconds
 	time.Sleep(probeInterval)
 	slog.InfoContext(ctx, "initiating shutdown")
-	shutdownDependenciesAndServices(ctx, httpServer, grpcServer)
+	shutdownDependenciesAndServices(ctx, httpServer, grpcServer, asClient)
 }
 
 func shutdownDependenciesAndServices(
 	ctx context.Context,
 	httpServer *xhttp.HTTP,
 	grpcServer *grpc.GRPC,
+	asClient *as.Client,
 ) {
 	wgroup := &sync.WaitGroup{}
 	if httpServer != nil {
@@ -84,4 +88,8 @@ func shutdownDependenciesAndServices(
 	// after all the APIs of the application are shutdown (e.g. HTTP, gRPC, Pubsub listener etc.)
 	// we should close connections to dependencies like database, cache etc.
 	wgroup.Wait()
+
+	if asClient != nil {
+		asClient.Close()
+	}
 }
