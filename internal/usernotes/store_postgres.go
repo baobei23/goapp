@@ -11,17 +11,14 @@ import (
 var QueryTimeoutDuration = 5 * time.Second
 
 type pgstore struct {
-	pqdriver  *pgxpool.Pool
-	tableName string
+	pqdriver *pgxpool.Pool
 }
 
 func (ps *pgstore) GetNoteByID(ctx context.Context, userID string, noteID string) (*Note, error) {
-	query := fmt.Sprintf(`
+	query := `
 		SELECT title, content, created_at, updated_at
-		FROM %s
-		WHERE id = $1 AND user_id = $2`,
-		ps.tableName,
-	)
+		FROM user_notes
+		WHERE id = $1 AND user_id = $2`
 
 	usernote := &Note{
 		ID:     noteID,
@@ -47,11 +44,9 @@ func (ps *pgstore) GetNoteByID(ctx context.Context, userID string, noteID string
 }
 
 func (ps *pgstore) SaveNote(ctx context.Context, note *Note) (string, error) {
-	query := fmt.Sprintf(`
-		INSERT INTO %s (id, title, content, user_id)
-		VALUES (gen_random_uuid(), $1, $2, $3) RETURNING id`,
-		ps.tableName,
-	)
+	query := `
+		INSERT INTO user_notes (id, title, content, user_id)
+		VALUES (gen_random_uuid(), $1, $2, $3) RETURNING id`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -69,9 +64,8 @@ func (ps *pgstore) SaveNote(ctx context.Context, note *Note) (string, error) {
 	return noteID, nil
 }
 
-func NewPostgresStore(pqdriver *pgxpool.Pool, tableName string) store {
+func NewPostgresStore(pqdriver *pgxpool.Pool) store {
 	return &pgstore{
-		pqdriver:  pqdriver,
-		tableName: tableName,
+		pqdriver: pqdriver,
 	}
 }

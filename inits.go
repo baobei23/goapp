@@ -131,10 +131,10 @@ func start(
 
 	healthServer = startHealthServer(ctx, pqdriver, isReady, fatalErr)
 
-	userPGstore := users.NewPostgresStore(pqdriver, cfgs.UserPostgresTable())
+	userPGstore := users.NewPostgresStore(pqdriver)
 	userSvc := users.NewService(userPGstore)
 
-	notePGstore := usernotes.NewPostgresStore(pqdriver, "user_notes")
+	notePGstore := usernotes.NewPostgresStore(pqdriver)
 	noteSvc := usernotes.NewService(notePGstore)
 
 	svrAPIs := api.NewServer(userSvc, noteSvc)

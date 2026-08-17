@@ -13,17 +13,14 @@ import (
 )
 
 type pgstore struct {
-	pqdriver  *pgxpool.Pool
-	tableName string
+	pqdriver *pgxpool.Pool
 }
 
 func (ps *pgstore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	query := fmt.Sprintf(`
+	query := `
 		SELECT id, full_name, email, password
-		FROM %s
-		WHERE email = $1`,
-		ps.tableName,
-	)
+		FROM users
+		WHERE email = $1`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -43,12 +40,10 @@ func (ps *pgstore) GetUserByEmail(ctx context.Context, email string) (*User, err
 }
 
 func (ps *pgstore) GetUserByID(ctx context.Context, id string) (*User, error) {
-	query := fmt.Sprintf(`
+	query := `
 		SELECT id, full_name, email, password
-		FROM %s
-		WHERE id = $1`,
-		ps.tableName,
-	)
+		FROM users
+		WHERE id = $1`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -68,11 +63,9 @@ func (ps *pgstore) GetUserByID(ctx context.Context, id string) (*User, error) {
 }
 
 func (ps *pgstore) SaveUser(ctx context.Context, user *User) (string, error) {
-	query := fmt.Sprintf(`
-		INSERT INTO %s (id, full_name, email, password)
-		VALUES (gen_random_uuid(), $1, $2, $3) RETURNING id`,
-		ps.tableName,
-	)
+	query := `
+		INSERT INTO users (id, full_name, email, password)
+		VALUES (gen_random_uuid(), $1, $2, $3) RETURNING id`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -110,7 +103,7 @@ func (ps *pgstore) BulkSaveUser(ctx context.Context, users []User) error {
 
 	inserted, err := ps.pqdriver.CopyFrom(
 		ctx,
-		pgx.Identifier{ps.tableName},
+		pgx.Identifier{"users"},
 		[]string{"id", "full_name", "email", "password"},
 		pgx.CopyFromRows(rows),
 	)
@@ -131,7 +124,7 @@ func (ps *pgstore) BulkSaveUser(ctx context.Context, users []User) error {
 }
 
 func (ps *pgstore) UpdatePassword(ctx context.Context, id string, newPassword []byte) error {
-	query := fmt.Sprintf(`UPDATE %s SET password = $1 WHERE id = $2`, ps.tableName)
+	query := `UPDATE users SET password = $1 WHERE id = $2`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -181,9 +174,8 @@ func (ps *pgstore) RevokeRefreshToken(ctx context.Context, jti string) error {
 	return nil
 }
 
-func NewPostgresStore(pqdriver *pgxpool.Pool, tablename string) *pgstore {
+func NewPostgresStore(pqdriver *pgxpool.Pool) *pgstore {
 	return &pgstore{
-		pqdriver:  pqdriver,
-		tableName: tablename,
+		pqdriver: pqdriver,
 	}
 }

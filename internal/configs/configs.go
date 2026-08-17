@@ -73,14 +73,6 @@ func (cfg *Configs) JWT() *jwt.TokenManager {
 	}
 }
 
-func (cfg *Configs) UserPostgresTable() string {
-	return "users"
-}
-
-func (cfg *Configs) UserNotesPostgresTable() string {
-	return "user_notes"
-}
-
 func loadEnv() env {
 	switch env(os.Getenv("ENV")) {
 	case EnvLocal:
