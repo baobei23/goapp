@@ -92,6 +92,10 @@ func main() {
 		panic(fmt.Errorf("failed to load configurations: %w", err))
 	}
 
+	if err := cfgs.Validate(); err != nil {
+		panic(err)
+	}
+
 	jsonHandler := slog.NewJSONHandler(os.Stdout, nil)
 	slog.SetDefault(slog.New(jsonHandler).With(
 		"app", cfgs.AppName,

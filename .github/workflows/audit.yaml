@@ -2,7 +2,7 @@ name: Audit
 
 on:
   push:
-    branches: [main]
+    branches: [ main, kafka, aerospike, sqlc ]
     pull_request:
       branches: [main]
 

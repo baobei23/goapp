@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"time"
@@ -71,6 +72,20 @@ func (cfg *Configs) JWT() *jwt.TokenManager {
 		AccessExpiry:  15 * time.Minute,
 		RefreshExpiry: 30 * 24 * time.Hour,
 	}
+}
+
+// Tambahkan method Validate() pada struct Configs
+func (cfg *Configs) Validate() error {
+	if os.Getenv("JWT_SECRET") == "" {
+		return errors.New("configuration error: JWT_SECRET environment variable is required")
+	}
+	if len(os.Getenv("JWT_SECRET")) < 32 {
+		return errors.New("configuration error: JWT_SECRET must be at least 32 characters for security")
+	}
+	if os.Getenv("POSTGRES_HOST") == "" {
+		return errors.New("configuration error: POSTGRES_HOST is required")
+	}
+	return nil
 }
 
 func loadEnv() env {

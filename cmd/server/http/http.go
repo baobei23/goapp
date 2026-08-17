@@ -8,6 +8,7 @@ import (
 
 	"github.com/baobei23/goapp/internal/api"
 	"github.com/baobei23/goapp/internal/pkg/jwt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
@@ -60,6 +61,15 @@ func NewService(cfg *Config, apis api.Server, tm *jwt.TokenManager) (*HTTP, erro
 
 	router := gin.New()
 	router.Use(gin.Recovery())
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000", "https://mydomain.com"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	if cfg.EnableAccessLog {
 		router.Use(gin.Logger())
 	}
