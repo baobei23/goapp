@@ -36,3 +36,7 @@ gen-docs:
 .PHONY: e2e
 e2e:
 	@./scripts/e2e.sh
+
+.PHONY: sqlc
+sqlc:
+	@$$(go env GOPATH)/bin/sqlc generate

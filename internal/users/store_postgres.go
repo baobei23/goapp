@@ -8,27 +8,22 @@ import (
 
 	"errors"
 
+	"github.com/baobei23/goapp/internal/db"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type pgstore struct {
-	pqdriver *pgxpool.Pool
+	q *db.Queries
 }
 
 func (ps *pgstore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	query := `
-		SELECT id, full_name, email, password
-		FROM users
-		WHERE email = $1`
-
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	user := new(User)
+	row, err := ps.q.GetUserByEmail(ctx, email)
 
-	row := ps.pqdriver.QueryRow(ctx, query, email)
-	err := row.Scan(&user.ID, &user.FullName, &user.Email, &user.Password)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("%w: %s", ErrUserEmailNotFound, email)
@@ -36,22 +31,20 @@ func (ps *pgstore) GetUserByEmail(ctx context.Context, email string) (*User, err
 		return nil, fmt.Errorf("failed getting user info: %w", err)
 	}
 
-	return user, nil
+	return &User{
+		ID:       row.ID,
+		FullName: row.FullName.String,
+		Email:    row.Email,
+		Password: row.Password,
+	}, nil
 }
 
 func (ps *pgstore) GetUserByID(ctx context.Context, id string) (*User, error) {
-	query := `
-		SELECT id, full_name, email, password
-		FROM users
-		WHERE id = $1`
-
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	user := new(User)
+	row, err := ps.q.GetUserByID(ctx, id)
 
-	row := ps.pqdriver.QueryRow(ctx, query, id)
-	err := row.Scan(&user.ID, &user.FullName, &user.Email, &user.Password)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("%w: %s", ErrUserNotFound, id)
@@ -59,77 +52,69 @@ func (ps *pgstore) GetUserByID(ctx context.Context, id string) (*User, error) {
 		return nil, fmt.Errorf("failed getting user info: %w", err)
 	}
 
-	return user, nil
+	return &User{
+		ID:       row.ID,
+		FullName: row.FullName.String,
+		Email:    row.Email,
+		Password: row.Password,
+	}, nil
 }
 
 func (ps *pgstore) SaveUser(ctx context.Context, user *User) (string, error) {
-	query := `
-		INSERT INTO users (id, full_name, email, password)
-		VALUES (gen_random_uuid(), $1, $2, $3) RETURNING id`
-
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	err := ps.pqdriver.QueryRow(ctx, query,
-		user.FullName,
-		user.Email,
-		user.Password,
-	).Scan(&user.ID)
+	id, err := ps.q.CreateUser(ctx, db.CreateUserParams{
+		FullName: pgtype.Text{String: user.FullName, Valid: true},
+		Email:    user.Email,
+		Password: user.Password,
+	})
 
 	if err != nil {
-		if strings.Contains(err.Error(), "violates unique constraint \"users_email_key\"") {
+		if strings.Contains(err.Error(), "users_email_key") {
 			return "", fmt.Errorf("%w: %s", ErrUserEmailAlreadyExists, user.Email)
 		}
 		return "", fmt.Errorf("failed storing user info: %w", err)
 	}
 
-	return user.ID, nil
+	return id, nil
+
 }
 
 func (ps *pgstore) BulkSaveUser(ctx context.Context, users []User) error {
-	rows := make([][]any, 0, len(users))
-
-	for _, user := range users {
-		rows = append(rows, []any{
-			user.ID,
-			user.FullName,
-			user.Email,
-			user.Password,
-		})
-	}
-
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	inserted, err := ps.pqdriver.CopyFrom(
-		ctx,
-		pgx.Identifier{"users"},
-		[]string{"id", "full_name", "email", "password"},
-		pgx.CopyFromRows(rows),
-	)
+	params := make([]db.BulkCreateUsersParams, 0, len(users))
+	for _, user := range users {
+		params = append(params, db.BulkCreateUsersParams{
+			ID:       user.ID,
+			FullName: pgtype.Text{String: user.FullName, Valid: true},
+			Email:    user.Email,
+			Password: user.Password,
+		})
+	}
+
+	inserted, err := ps.q.BulkCreateUsers(ctx, params)
 	if err != nil {
 		return fmt.Errorf("failed inserting users: %w", err)
 	}
 
-	ulen := int64(len(users))
-	if inserted != ulen {
-		return fmt.Errorf(
-			"failed inserting %d out of %d users",
-			ulen-inserted,
-			ulen,
-		)
+	if inserted != int64(len(users)) {
+		return fmt.Errorf("failed inserting %d out of %d users", len(users)-int(inserted), len(users))
 	}
 
 	return nil
 }
 
 func (ps *pgstore) UpdatePassword(ctx context.Context, id string, newPassword []byte) error {
-	query := `UPDATE users SET password = $1 WHERE id = $2`
-
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := ps.pqdriver.Exec(ctx, query, newPassword, id)
+	err := ps.q.UpdatePassword(ctx, db.UpdatePasswordParams{
+		Password: newPassword,
+		ID:       id,
+	})
 	if err != nil {
 		return fmt.Errorf("failed updating password: %w", err)
 	}
@@ -138,11 +123,14 @@ func (ps *pgstore) UpdatePassword(ctx context.Context, id string, newPassword []
 }
 
 func (ps *pgstore) SaveRefreshToken(ctx context.Context, jti, userID string, expiresAt time.Time) error {
-	query := `INSERT INTO refresh_tokens (jti, user_id, expires_at) VALUES ($1, $2, $3)`
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := ps.pqdriver.Exec(ctx, query, jti, userID, expiresAt)
+	err := ps.q.SaveRefreshToken(ctx, db.SaveRefreshTokenParams{
+		Jti:       jti,
+		UserID:    userID,
+		ExpiresAt: expiresAt,
+	})
 	if err != nil {
 		return fmt.Errorf("failed saving refresh token: %w", err)
 	}
@@ -150,12 +138,10 @@ func (ps *pgstore) SaveRefreshToken(ctx context.Context, jti, userID string, exp
 }
 
 func (ps *pgstore) CheckRefreshToken(ctx context.Context, jti string) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM refresh_tokens WHERE jti = $1)`
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	var exists bool
-	err := ps.pqdriver.QueryRow(ctx, query, jti).Scan(&exists)
+	exists, err := ps.q.CheckRefreshToken(ctx, jti)
 	if err != nil {
 		return false, fmt.Errorf("failed checking refresh token: %w", err)
 	}
@@ -163,11 +149,10 @@ func (ps *pgstore) CheckRefreshToken(ctx context.Context, jti string) (bool, err
 }
 
 func (ps *pgstore) RevokeRefreshToken(ctx context.Context, jti string) error {
-	query := `DELETE FROM refresh_tokens WHERE jti = $1`
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := ps.pqdriver.Exec(ctx, query, jti)
+	err := ps.q.RevokeRefreshToken(ctx, jti)
 	if err != nil {
 		return fmt.Errorf("failed revoking refresh token: %w", err)
 	}
@@ -176,6 +161,6 @@ func (ps *pgstore) RevokeRefreshToken(ctx context.Context, jti string) error {
 
 func NewPostgresStore(pqdriver *pgxpool.Pool) *pgstore {
 	return &pgstore{
-		pqdriver: pqdriver,
+		q: db.New(pqdriver),
 	}
 }

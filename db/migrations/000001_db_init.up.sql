@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     IF row(NEW.*) IS DISTINCT FROM row(OLD.*) THEN
-      NEW.updated_at = now(); 
+      NEW.updated_at = now();
       RETURN NEW;
     ELSE
       RETURN OLD;
@@ -12,7 +12,7 @@ $$ language 'plpgsql';
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
-    email TEXT UNIQUE,
+    email TEXT NOT NULL UNIQUE,
     password BYTEA,
     full_name TEXT,
     created_at timestamptz DEFAULT now(),
