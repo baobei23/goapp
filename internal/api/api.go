@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/baobei23/goapp/internal/events"
 	"github.com/baobei23/goapp/internal/usernotes"
 	"github.com/baobei23/goapp/internal/users"
 )
@@ -19,6 +20,7 @@ type Server interface {
 	SaveRefreshToken(ctx context.Context, jti, userID string, expiresAt time.Time) error
 	CheckRefreshToken(ctx context.Context, jti string) (bool, error)
 	RevokeRefreshToken(ctx context.Context, jti string) error
+	GetUserActivity(ctx context.Context, userID string, limit int) ([]events.Activity, error)
 }
 
 // Subscriber has all the methods required to run the subscriber
@@ -29,19 +31,25 @@ type Subscriber interface {
 type API struct {
 	users  *users.Users
 	unotes *usernotes.UserNotes
+	astore activityStore
 }
 
-func New(us *users.Users, un *usernotes.UserNotes) *API {
+type activityStore interface {
+	GetUserActivity(ctx context.Context, userID string, limit int) ([]events.Activity, error)
+}
+
+func New(us *users.Users, un *usernotes.UserNotes, as activityStore) *API {
 	return &API{
 		users:  us,
 		unotes: un,
+		astore: as,
 	}
 }
 
-func NewServer(us *users.Users, un *usernotes.UserNotes) Server {
-	return New(us, un)
+func NewServer(us *users.Users, un *usernotes.UserNotes, as activityStore) Server {
+	return New(us, un, as)
 }
 
 func NewSubscriber(us *users.Users) Subscriber {
-	return New(us, nil)
+	return New(us, nil, nil)
 }

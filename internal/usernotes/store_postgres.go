@@ -5,13 +5,19 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var QueryTimeoutDuration = 5 * time.Second
 
+// SaveHook runs inside the SaveNote transaction, after the note is inserted.
+// Used for the transactional outbox: atomic note + event write.
+type SaveHook func(ctx context.Context, tx pgx.Tx, noteID, userID string) error
+
 type pgstore struct {
 	pqdriver *pgxpool.Pool
+	onSave   SaveHook
 }
 
 func (ps *pgstore) GetNoteByID(ctx context.Context, userID string, noteID string) (*Note, error) {
@@ -51,8 +57,14 @@ func (ps *pgstore) SaveNote(ctx context.Context, note *Note) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
+	tx, err := ps.pqdriver.Begin(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed beginning tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
 	var noteID string
-	err := ps.pqdriver.QueryRow(ctx, query,
+	err = tx.QueryRow(ctx, query,
 		note.Title,
 		note.Content,
 		note.UserID,
@@ -61,11 +73,23 @@ func (ps *pgstore) SaveNote(ctx context.Context, note *Note) (string, error) {
 		return "", fmt.Errorf("failed storing note: %w", err)
 	}
 
+	// Outbox: event written in the same tx as the note. Atomic — both or neither.
+	if ps.onSave != nil {
+		if err := ps.onSave(ctx, tx, noteID, note.UserID); err != nil {
+			return "", fmt.Errorf("save hook failed: %w", err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return "", fmt.Errorf("failed committing note: %w", err)
+	}
+
 	return noteID, nil
 }
 
-func NewPostgresStore(pqdriver *pgxpool.Pool) store {
+func NewPostgresStore(pqdriver *pgxpool.Pool, onSave SaveHook) store {
 	return &pgstore{
 		pqdriver: pqdriver,
+		onSave:   onSave,
 	}
 }

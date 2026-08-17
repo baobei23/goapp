@@ -24,6 +24,69 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/activity": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns recent activity events for the authenticated user (sourced from Kafka consumer)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Activity"
+                ],
+                "summary": "Get user activity log",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Max events to return (default 50, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server_http.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/events.Activity"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/server_http.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/server_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/logout": {
             "post": {
                 "description": "Logout by revoking refresh token",
@@ -281,7 +344,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/server_http.RegisterNoteRequest"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.RegisterNoteRequest"
                         }
                     }
                 ],
@@ -291,13 +354,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server_http.BaseResponse"
+                                    "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server_http.RegisterNoteRequest"
+                                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.RegisterNoteRequest"
                                         }
                                     }
                                 }
@@ -307,19 +370,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     }
                 }
@@ -358,7 +421,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server_http.BaseResponse"
+                                    "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse"
                                 },
                                 {
                                     "type": "object",
@@ -374,19 +437,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/server_http.ErrorResponse"
+                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
                         }
                     }
                 }
@@ -416,7 +479,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse"
+                                    "$ref": "#/definitions/server_http.BaseResponse"
                                 },
                                 {
                                     "type": "object",
@@ -432,19 +495,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
+                            "$ref": "#/definitions/server_http.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
+                            "$ref": "#/definitions/server_http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
+                            "$ref": "#/definitions/server_http.ErrorResponse"
                         }
                     }
                 }
@@ -491,25 +554,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse"
+                            "$ref": "#/definitions/server_http.BaseResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
+                            "$ref": "#/definitions/server_http.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
+                            "$ref": "#/definitions/server_http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse"
+                            "$ref": "#/definitions/server_http.ErrorResponse"
                         }
                     }
                 }
@@ -517,6 +580,33 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "events.Activity": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "entityID": {
+                    "type": "string"
+                },
+                "entityType": {
+                    "type": "string"
+                },
+                "eventType": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "userID": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_baobei23_goapp_cmd_server_http.BaseResponse": {
             "type": "object",
             "properties": {
@@ -554,9 +644,6 @@ const docTemplate = `{
                 "accessToken": {
                     "type": "string"
                 },
-                "expiresIn": {
-                    "type": "integer"
-                },
                 "user": {
                     "$ref": "#/definitions/users.User"
                 }
@@ -575,9 +662,6 @@ const docTemplate = `{
             "properties": {
                 "accessToken": {
                     "type": "string"
-                },
-                "expiresIn": {
-                    "type": "integer"
                 }
             }
         },
@@ -655,9 +739,6 @@ const docTemplate = `{
                 "accessToken": {
                     "type": "string"
                 },
-                "expiresIn": {
-                    "type": "integer"
-                },
                 "user": {
                     "$ref": "#/definitions/users.User"
                 }
@@ -676,9 +757,6 @@ const docTemplate = `{
             "properties": {
                 "accessToken": {
                     "type": "string"
-                },
-                "expiresIn": {
-                    "type": "integer"
                 }
             }
         },

@@ -11,6 +11,33 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - goapp_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  kafka:
+    image: 'apache/kafka:latest'
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      CLUSTER_ID: '4L622nShTUiBenV3he4UxA'
+    ports:
+      - '9092:9092'
+      - '9094:9094'
+    networks:
+      - goapp_network
 
   goapp:
     image: cosmtrek/air:latest #change to golang:version
@@ -31,12 +58,16 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       ENABLE_METRICS: ${ENABLE_METRICS}
       ENABLE_TRACING: ${ENABLE_TRACING}
+      KAFKA_BROKERS: kafka:9092
     ports:
       - '8080:8080'
       - '2000:2000'
       - '9090:9090'
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
     networks:
       - goapp_network
 

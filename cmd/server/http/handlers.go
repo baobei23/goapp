@@ -45,6 +45,9 @@ func (h *Handlers) registerRoutes(r *gin.Engine) {
 	//usernotes
 	protected.POST("/usernotes", h.RegisterNote)
 	protected.GET("/usernotes/:noteID", h.ReadUserNote)
+
+	//activity log (kafka-sourced audit trail)
+	protected.GET("/activity", h.GetActivity)
 }
 
 func (h *Handlers) HelloWorld(c *gin.Context) {

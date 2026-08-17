@@ -1,5 +1,23 @@
 basePath: /
 definitions:
+  events.Activity:
+    properties:
+      createdAt:
+        type: string
+      entityID:
+        type: string
+      entityType:
+        type: string
+      eventType:
+        type: string
+      id:
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      userID:
+        type: string
+    type: object
   github_com_baobei23_goapp_cmd_server_http.BaseResponse:
     properties:
       data: {}
@@ -25,8 +43,6 @@ definitions:
     properties:
       accessToken:
         type: string
-      expiresIn:
-        type: integer
       user:
         $ref: '#/definitions/users.User'
     type: object
@@ -39,8 +55,6 @@ definitions:
     properties:
       accessToken:
         type: string
-      expiresIn:
-        type: integer
     type: object
   github_com_baobei23_goapp_cmd_server_http.RegisterNoteRequest:
     properties:
@@ -93,8 +107,6 @@ definitions:
     properties:
       accessToken:
         type: string
-      expiresIn:
-        type: integer
       user:
         $ref: '#/definitions/users.User'
     type: object
@@ -107,8 +119,6 @@ definitions:
     properties:
       accessToken:
         type: string
-      expiresIn:
-        type: integer
     type: object
   server_http.RegisterNoteRequest:
     properties:
@@ -172,6 +182,44 @@ info:
   termsOfService: http://swagger.io/terms/
   title: GoApp API
 paths:
+  /activity:
+    get:
+      consumes:
+      - application/json
+      description: Returns recent activity events for the authenticated user (sourced
+        from Kafka consumer)
+      parameters:
+      - description: Max events to return (default 50, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/server_http.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/events.Activity'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/server_http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/server_http.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get user activity log
+      tags:
+      - Activity
   /auth/logout:
     post:
       consumes:
@@ -323,7 +371,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/server_http.RegisterNoteRequest'
+          $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.RegisterNoteRequest'
       produces:
       - application/json
       responses:
@@ -331,23 +379,23 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/server_http.BaseResponse'
+            - $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server_http.RegisterNoteRequest'
+                  $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.RegisterNoteRequest'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Create User Note
@@ -371,7 +419,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server_http.BaseResponse'
+            - $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse'
             - properties:
                 data:
                   $ref: '#/definitions/usernotes.Note'
@@ -379,15 +427,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/server_http.ErrorResponse'
+            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Read User Note
@@ -405,7 +453,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse'
+            - $ref: '#/definitions/server_http.BaseResponse'
             - properties:
                 data:
                   $ref: '#/definitions/users.User'
@@ -413,15 +461,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Read User By ID
@@ -450,19 +498,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.BaseResponse'
+            $ref: '#/definitions/server_http.BaseResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_baobei23_goapp_cmd_server_http.ErrorResponse'
+            $ref: '#/definitions/server_http.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Change Password

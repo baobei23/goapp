@@ -88,6 +88,23 @@ func (cfg *Configs) Validate() error {
 	return nil
 }
 
+type KafkaConfig struct {
+	Brokers []string
+	Topic   string
+	GroupID string
+	Enabled bool
+}
+
+func (cfg *Configs) Kafka() KafkaConfig {
+	brokers := os.Getenv("KAFKA_BROKERS")
+	return KafkaConfig{
+		Brokers: strings.Split(brokers, ","),
+		Topic:   "goapp.events",
+		GroupID: "goapp-activity-log",
+		Enabled: brokers != "",
+	}
+}
+
 func loadEnv() env {
 	switch env(os.Getenv("ENV")) {
 	case EnvLocal:

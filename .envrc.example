@@ -19,3 +19,6 @@ export TEMPLATES_BASEPATH=./cmd/server/http/web/templates
 # Feature Flags
 export ENABLE_METRICS=
 export ENABLE_TRACING=
+
+# Kafka (leave empty to disable event publishing/consuming)
+export KAFKA_BROKERS=localhost:9094

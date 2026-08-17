@@ -6,11 +6,13 @@ import (
 	"log/slog"
 	"net/http"
 	"sync/atomic"
+	"time"
 
 	"github.com/baobei23/goapp/cmd/server/grpc"
 	xhttp "github.com/baobei23/goapp/cmd/server/http"
 	"github.com/baobei23/goapp/internal/api"
 	"github.com/baobei23/goapp/internal/configs"
+	"github.com/baobei23/goapp/internal/events"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/baobei23/goapp/internal/pkg/jwt"
@@ -134,10 +136,34 @@ func start(
 	userPGstore := users.NewPostgresStore(pqdriver)
 	userSvc := users.NewService(userPGstore)
 
-	notePGstore := usernotes.NewPostgresStore(pqdriver)
+	var saveHook usernotes.SaveHook
+	var activityStore *events.ActivityStore
+	if kcfg := cfgs.Kafka(); kcfg.Enabled {
+		producer := events.NewProducer(kcfg.Brokers, kcfg.Topic)
+		outbox := events.NewOutboxStore(pqdriver)
+
+		// Producer path: note write + event enqueue are atomic (outbox in same tx).
+		saveHook = events.NoteOutboxHook(outbox)
+
+		// Relay: drains outbox -> Kafka. Survives broker downtime (events stay in DB).
+		relay := events.NewOutboxRelay(outbox, producer)
+		go relay.Run(ctx, time.Second)
+
+		// Consumer path: Kafka -> activity_log.
+		consumer := events.NewConsumer(kcfg.Brokers, kcfg.Topic, kcfg.GroupID, events.NewPostgresHandler(pqdriver))
+		go func() {
+			if err := consumer.Run(ctx); err != nil {
+				slog.ErrorContext(ctx, "[kafka] consumer stopped", "err", err)
+			}
+		}()
+
+		activityStore = events.NewActivityStore(pqdriver)
+	}
+
+	notePGstore := usernotes.NewPostgresStore(pqdriver, saveHook)
 	noteSvc := usernotes.NewService(notePGstore)
 
-	svrAPIs := api.NewServer(userSvc, noteSvc)
+	svrAPIs := api.NewServer(userSvc, noteSvc, activityStore)
 
 	tm := cfgs.JWT()
 	hserver, gserver = startServers(svrAPIs, cfgs, tm, fatalErr)
