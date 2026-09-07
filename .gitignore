@@ -116,6 +116,10 @@ $RECYCLE.BIN/
 *.tmp
 
 .envrc
+.env
+.env.*
+!.env.*.example
+!.envrc.example
 
 # kubernetes
 k8s/secrets.yaml

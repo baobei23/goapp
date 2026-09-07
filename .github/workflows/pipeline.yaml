@@ -1,0 +1,177 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ============================================================================
+  # STAGE 1: BUILD
+  # ============================================================================
+  "build:image":
+    name: "build:image"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.5"
+          cache: true
+
+      - name: Code Quality & Audit
+        run: |
+          go vet ./...
+          go test -v ./...
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=staging
+            type=sha,prefix=sha-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================================================
+  # STAGE 2: SECURITY SCAN (Trivy / Container Vulnerability Scanner)
+  # ============================================================================
+  "security:scan":
+    name: "security:scan"
+    needs: "build:image"
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging"
+          format: "table"
+          exit-code: "0" # Tetap lolos tapi laporkan temuan kerentanan
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+  # ============================================================================
+  # STAGE 3: DEPLOY TO STAGING (Automated)
+  # ============================================================================
+  "deploy:staging":
+    name: "deploy:staging"
+    needs: "security:scan"
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment:
+      name: staging
+      url: https://staging.${{ secrets.VPS_IP }}.sslip.io
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS Staging via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: GITHUB_ACTOR,GITHUB_TOKEN
+          script: |
+            set -e
+            echo "--> Pulling latest staging image..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            mkdir -p ~/goapp
+            cd ~/goapp
+
+            # Update docker-compose and init script if needed
+            curl -sSL "https://raw.githubusercontent.com/${{ github.repository }}/main/docker/docker-compose.prod.yaml" -o docker-compose.prod.yaml
+            curl -sSL "https://raw.githubusercontent.com/${{ github.repository }}/main/docker/postgres-init.sh" -o postgres-init.sh
+            chmod +x postgres-init.sh
+
+            docker compose -f docker-compose.prod.yaml pull goapp_staging
+            docker compose -f docker-compose.prod.yaml up -d postgres
+
+            # Wait for postgres to be ready
+            sleep 5
+
+            docker compose -f docker-compose.prod.yaml up -d goapp_staging
+            echo "--> Staging deployment finished successfully!"
+
+  # ============================================================================
+  # STAGE 3: DEPLOY TO PROD BLUE (Manual Approval Gate ▶️)
+  # ============================================================================
+  "deploy:prod:blue":
+    name: "deploy:prod:blue"
+    needs: "deploy:staging"
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    # Environment 'production' ini yang memunculkan tombol manual play/approval ▶️ di GitHub!
+    environment:
+      name: production
+      url: https://api.${{ secrets.VPS_IP }}.sslip.io
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS Production (Blue) via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            echo "--> Pulling latest production image..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            cd ~/goapp
+
+            # Pull and restart Production Blue container
+            docker compose -f docker-compose.prod.yaml pull goapp_prod
+            docker compose -f docker-compose.prod.yaml up -d goapp_prod
+            echo "--> Production Blue deployment completed successfully!"
