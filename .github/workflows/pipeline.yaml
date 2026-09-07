@@ -108,7 +108,6 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment:
       name: staging
-      url: https://staging.${{ secrets.VPS_IP }}.sslip.io
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -153,7 +152,6 @@ jobs:
     # Environment 'production' ini yang memunculkan tombol manual play/approval ▶️ di GitHub!
     environment:
       name: production
-      url: https://api.${{ secrets.VPS_IP }}.sslip.io
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
