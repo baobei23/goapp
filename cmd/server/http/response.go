@@ -1,6 +1,9 @@
 package http
 
 import (
+	"log/slog"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,17 +24,27 @@ func JSON(c *gin.Context, status int, data any, meta any) {
 	})
 }
 
-// Error sends an error response with the given error
+// Error sends a sanitized error response and logs internal server errors
 func Error(c *gin.Context, status int, err error) {
-	var msg string
-	if err != nil {
-		msg = err.Error()
+	var clientMsg string
+
+	if status >= http.StatusInternalServerError {
+		slog.ErrorContext(c.Request.Context(), "internal server error",
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"error", err,
+		)
+		clientMsg = "Internal server error. Please try again later."
 	} else {
-		msg = "Unknown error"
+		if err != nil {
+			clientMsg = err.Error()
+		} else {
+			clientMsg = "Bad request"
+		}
 	}
 
 	c.JSON(status, ErrorResponse{
-		Error: msg,
+		Error: clientMsg,
 	})
 
 	c.Abort()
