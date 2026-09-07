@@ -19,7 +19,7 @@ jobs:
   # ============================================================================
   # STAGE 1: BUILD
   # ============================================================================
-  "build:image":
+  build_image:
     name: "build:image"
     runs-on: ubuntu-latest
     steps:
@@ -72,9 +72,9 @@ jobs:
   # ============================================================================
   # STAGE 2: SECURITY SCAN (Trivy / Container Vulnerability Scanner)
   # ============================================================================
-  "security:scan":
+  security_scan:
     name: "security:scan"
-    needs: "build:image"
+    needs: build_image
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
     steps:
@@ -101,9 +101,9 @@ jobs:
   # ============================================================================
   # STAGE 3: DEPLOY TO STAGING (Automated)
   # ============================================================================
-  "deploy:staging":
+  deploy_staging:
     name: "deploy:staging"
-    needs: "security:scan"
+    needs: security_scan
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment:
@@ -144,9 +144,9 @@ jobs:
   # ============================================================================
   # STAGE 3: DEPLOY TO PROD BLUE (Manual Approval Gate ▶️)
   # ============================================================================
-  "deploy:prod:blue":
+  deploy_prod_blue:
     name: "deploy:prod:blue"
-    needs: "deploy:staging"
+    needs: deploy_staging
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     # Environment 'production' ini yang memunculkan tombol manual play/approval ▶️ di GitHub!
