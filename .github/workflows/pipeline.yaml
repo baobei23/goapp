@@ -154,7 +154,15 @@ jobs:
             docker compose -f docker-compose.prod.yaml up -d postgres
 
             # Wait for postgres to be ready
-            sleep 5
+            echo "--> Waiting for PostgreSQL to be ready..."
+            for i in $(seq 1 30); do
+              if docker exec goapp_postgres pg_isready -U postgres >/dev/null 2>&1; then
+                echo "PostgreSQL is ready!"
+                break
+              fi
+              echo "Waiting for PostgreSQL ($i/30)..."
+              sleep 2
+            done
 
             # Run official golang-migrate for staging
             echo "--> Running database migrations for staging..."
@@ -163,7 +171,7 @@ jobs:
               -v ~/goapp/db/migrations:/migrations \
               migrate/migrate:v4.18.2 \
               -path=/migrations \
-              -database "postgres://postgres:${STAGING_PASS}@postgres:5432/goapp_staging?sslmode=disable" up
+              -database "postgres://postgres:${STAGING_PASS}@goapp_postgres:5432/goapp_staging?sslmode=disable" up
 
             docker compose -f docker-compose.prod.yaml up -d goapp_staging
             echo "--> Staging deployment finished successfully!"
@@ -203,7 +211,7 @@ jobs:
               -v ~/goapp/db/migrations:/migrations \
               migrate/migrate:v4.18.2 \
               -path=/migrations \
-              -database "postgres://postgres:${PROD_PASS}@postgres:5432/goapp_prod?sslmode=disable" up
+              -database "postgres://postgres:${PROD_PASS}@goapp_postgres:5432/goapp_prod?sslmode=disable" up
 
             # Pull and restart Production Blue container
             docker compose -f docker-compose.prod.yaml pull goapp_prod

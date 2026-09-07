@@ -16,7 +16,9 @@ services:
         limits:
           memory: 350M
     networks:
-      - goapp_prod_net
+      goapp_prod_net:
+        aliases:
+          - postgres
 
   # --------------------------------------------------------------------------
   # STAGING ENVIRONMENT (Auto-deployed on CI)
