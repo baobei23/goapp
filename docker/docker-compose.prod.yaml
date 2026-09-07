@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: 'postgres:17-alpine'
+    image: 'postgres:18-alpine'
     container_name: goapp_postgres
     restart: always
     env_file:
@@ -62,6 +62,7 @@ services:
 
 networks:
   goapp_prod_net:
+    name: goapp_prod_net
     driver: bridge
 
 volumes:

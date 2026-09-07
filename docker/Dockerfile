@@ -1,5 +1,5 @@
 # Multi-stage build for Go application
-FROM golang:1.25.5-alpine AS builder
+FROM golang:1.27.1-alpine AS builder
 
 WORKDIR /app
 

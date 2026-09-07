@@ -29,13 +29,22 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.5"
+          go-version: "1.27.1"
           cache: true
 
-      - name: Code Quality & Audit
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Code Quality & Vet
+        run: go vet ./...
+
+      - name: Install and run staticcheck
         run: |
-          go vet ./...
-          go test -v ./...
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          staticcheck ./...
+
+      - name: Run Unit Tests
+        run: go test -v ./...
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -112,6 +121,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Copy migrations to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "db/migrations"
+          target: "~/goapp"
+
       - name: Deploy to VPS Staging via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -137,6 +155,15 @@ jobs:
 
             # Wait for postgres to be ready
             sleep 5
+
+            # Run official golang-migrate for staging
+            echo "--> Running database migrations for staging..."
+            STAGING_PASS=$(grep '^POSTGRES_PASSWORD=' .env.staging | cut -d '=' -f2-)
+            docker run --rm --network goapp_prod_net \
+              -v ~/goapp/db/migrations:/migrations \
+              migrate/migrate:v4.18.2 \
+              -path=/migrations \
+              -database "postgres://postgres:${STAGING_PASS}@postgres:5432/goapp_staging?sslmode=disable" up
 
             docker compose -f docker-compose.prod.yaml up -d goapp_staging
             echo "--> Staging deployment finished successfully!"
@@ -168,6 +195,15 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
             cd ~/goapp
+
+            # Run official golang-migrate for production
+            echo "--> Running database migrations for production..."
+            PROD_PASS=$(grep '^POSTGRES_PASSWORD=' .env.production | cut -d '=' -f2-)
+            docker run --rm --network goapp_prod_net \
+              -v ~/goapp/db/migrations:/migrations \
+              migrate/migrate:v4.18.2 \
+              -path=/migrations \
+              -database "postgres://postgres:${PROD_PASS}@postgres:5432/goapp_prod?sslmode=disable" up
 
             # Pull and restart Production Blue container
             docker compose -f docker-compose.prod.yaml pull goapp_prod
