@@ -174,6 +174,11 @@ jobs:
               -database "postgres://postgres:${STAGING_PASS}@goapp_postgres:5432/goapp_staging?sslmode=disable" up
 
             docker compose -f docker-compose.prod.yaml up -d goapp_staging
+
+            # Clean up old/dangling docker images to save disk space
+            echo "--> Cleaning up old docker images..."
+            docker image prune -f
+
             echo "--> Staging deployment finished successfully!"
 
   # ============================================================================
@@ -216,4 +221,9 @@ jobs:
             # Pull and restart Production Blue container
             docker compose -f docker-compose.prod.yaml pull goapp_prod
             docker compose -f docker-compose.prod.yaml up -d goapp_prod
+
+            # Clean up old/dangling docker images to save disk space
+            echo "--> Cleaning up old docker images..."
+            docker image prune -f
+
             echo "--> Production Blue deployment completed successfully!"
