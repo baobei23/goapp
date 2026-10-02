@@ -123,7 +123,7 @@ func start(
 	isReady *atomic.Bool,
 	cfgs *configs.Configs,
 	fatalErr chan<- error,
-) (hserver *xhttp.HTTP, gserver *grpc.GRPC, healthServer *http.Server) {
+) (hserver *xhttp.HTTP, gserver *grpc.GRPC, healthServer *http.Server, pqdriver *pgxpool.Pool) {
 	pqdriver, err := postgres.NewPool(cfgs.Postgres())
 	if err != nil {
 		panic(fmt.Errorf("failed to connect to postgres: %w", err))

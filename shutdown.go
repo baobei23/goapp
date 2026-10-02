@@ -11,6 +11,7 @@ import (
 
 	"github.com/baobei23/goapp/cmd/server/grpc"
 	xhttp "github.com/baobei23/goapp/cmd/server/http"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func shutdown(
@@ -20,6 +21,7 @@ func shutdown(
 	healthResp *http.Server,
 	httpServer *xhttp.HTTP,
 	grpcServer *grpc.GRPC,
+	pqDriver *pgxpool.Pool,
 ) {
 	// set the service as Not ready as soon as it's exiting main
 	isReady.Store(false)
@@ -56,13 +58,14 @@ func shutdown(
 	// in this case, the Kuberenetes probe interval is assumed to be 2 seconds
 	time.Sleep(probeInterval)
 	slog.InfoContext(ctx, "initiating shutdown")
-	shutdownDependenciesAndServices(ctx, httpServer, grpcServer)
+	shutdownDependenciesAndServices(ctx, httpServer, grpcServer, pqDriver)
 }
 
 func shutdownDependenciesAndServices(
 	ctx context.Context,
 	httpServer *xhttp.HTTP,
 	grpcServer *grpc.GRPC,
+	pqDriver *pgxpool.Pool,
 ) {
 	wgroup := &sync.WaitGroup{}
 	if httpServer != nil {
@@ -84,4 +87,7 @@ func shutdownDependenciesAndServices(
 	// after all the APIs of the application are shutdown (e.g. HTTP, gRPC, Pubsub listener etc.)
 	// we should close connections to dependencies like database, cache etc.
 	wgroup.Wait()
+	if pqDriver != nil {
+		pqDriver.Close()
+	}
 }

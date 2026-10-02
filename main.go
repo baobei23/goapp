@@ -109,7 +109,7 @@ func main() {
 		defer tp.Shutdown(ctx)
 	}
 
-	hserver, gserver, healthServer := start(ctx, &isReady, cfgs, fatalErr)
+	hserver, gserver, healthServer, db := start(ctx, &isReady, cfgs, fatalErr)
 
 	defer shutdown(
 		shutdownGraceperiod,
@@ -118,6 +118,7 @@ func main() {
 		healthServer,
 		hserver,
 		gserver,
+		db,
 	)
 	select {
 	case exitErr = <-fatalErr:
