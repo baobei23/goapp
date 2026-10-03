@@ -30,18 +30,18 @@ type RegisterNoteRequest struct {
 func (h *Handlers) RegisterNote(w http.ResponseWriter, r *http.Request) {
 	userID := GetUserID(r)
 	if userID == "" {
-		Error(w, r, http.StatusUnauthorized, errors.New("unauthorized"))
+		writeError(w, r, http.StatusUnauthorized, errors.New("unauthorized"))
 		return
 	}
 
 	var req RegisterNoteRequest
 	if err := decodeJSON(w, r, &req); err != nil {
-		Error(w, r, http.StatusBadRequest, err)
+		writeError(w, r, http.StatusBadRequest, err)
 		return
 	}
 
 	if strings.TrimSpace(req.Title) == "" || strings.TrimSpace(req.Content) == "" {
-		Error(w, r, http.StatusBadRequest, errors.New("title and content are required"))
+		writeError(w, r, http.StatusBadRequest, errors.New("title and content are required"))
 		return
 	}
 
@@ -53,11 +53,11 @@ func (h *Handlers) RegisterNote(w http.ResponseWriter, r *http.Request) {
 
 	un, err := h.notes.SaveNote(r.Context(), unote)
 	if err != nil {
-		Error(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	JSON(w, http.StatusCreated, un, nil)
+	writeJSON(w, http.StatusCreated, un)
 }
 
 // readUserNote godoc
@@ -77,21 +77,21 @@ func (h *Handlers) RegisterNote(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) ReadUserNote(w http.ResponseWriter, r *http.Request) {
 	userID := GetUserID(r)
 	if userID == "" {
-		Error(w, r, http.StatusUnauthorized, errors.New("unauthorized"))
+		writeError(w, r, http.StatusUnauthorized, errors.New("unauthorized"))
 		return
 	}
 
 	noteID := r.PathValue("noteID")
 	if noteID == "" {
-		Error(w, r, http.StatusBadRequest, errors.New("noteID is required"))
+		writeError(w, r, http.StatusBadRequest, errors.New("noteID is required"))
 		return
 	}
 
 	un, err := h.notes.GetNoteByID(r.Context(), userID, noteID)
 	if err != nil {
-		Error(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	JSON(w, http.StatusOK, un, nil)
+	writeJSON(w, http.StatusOK, un)
 }

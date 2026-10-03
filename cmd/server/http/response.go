@@ -8,25 +8,23 @@ import (
 
 type BaseResponse struct {
 	Data any `json:"data,omitempty"`
-	Meta any `json:"meta,omitempty"`
 }
 
 type ErrorResponse struct {
 	Error string `json:"error" example:"Something went wrong"`
 }
 
-// JSON sends a JSON response with the given data and meta
-func JSON(w http.ResponseWriter, status int, data any, meta any) {
+// writeJSON sends a JSON response with the given data
+func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(BaseResponse{
 		Data: data,
-		Meta: meta,
 	})
 }
 
-// Error sends a sanitized error response and logs internal server errors
-func Error(w http.ResponseWriter, r *http.Request, status int, err error) {
+// writeError sends a sanitized error response and logs internal server errors
+func writeError(w http.ResponseWriter, r *http.Request, status int, err error) {
 	var clientMsg string
 
 	if status >= http.StatusInternalServerError {

@@ -48,11 +48,11 @@ func (req *RegisterRequest) validate() error {
 func (h *Handlers) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	if err := decodeJSON(w, r, &req); err != nil {
-		Error(w, r, http.StatusBadRequest, err)
+		writeError(w, r, http.StatusBadRequest, err)
 		return
 	}
 	if err := req.validate(); err != nil {
-		Error(w, r, http.StatusBadRequest, err)
+		writeError(w, r, http.StatusBadRequest, err)
 		return
 	}
 
@@ -65,14 +65,14 @@ func (h *Handlers) Register(w http.ResponseWriter, r *http.Request) {
 	createdUser, err := h.users.Register(r.Context(), u)
 	if err != nil {
 		if errors.Is(err, users.ErrUserEmailAlreadyExists) {
-			Error(w, r, http.StatusConflict, err)
+			writeError(w, r, http.StatusConflict, err)
 			return
 		}
-		Error(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	JSON(w, http.StatusCreated, createdUser, nil)
+	writeJSON(w, http.StatusCreated, createdUser)
 }
 
 type LoginRequest struct {
@@ -113,29 +113,29 @@ type LoginResponse struct {
 func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := decodeJSON(w, r, &req); err != nil {
-		Error(w, r, http.StatusBadRequest, err)
+		writeError(w, r, http.StatusBadRequest, err)
 		return
 	}
 	if err := req.validate(); err != nil {
-		Error(w, r, http.StatusBadRequest, err)
+		writeError(w, r, http.StatusBadRequest, err)
 		return
 	}
 
 	user, err := h.users.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
-		Error(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
 	accessToken, refreshToken, jti, err := h.tm.GeneratePair(user.ID, user.Email)
 	if err != nil {
-		Error(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
 	err = h.users.SaveRefreshToken(r.Context(), jti, user.ID, time.Now().Add(h.tm.GetRefreshExpiry()))
 	if err != nil {
-		Error(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -147,10 +147,10 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 
-	JSON(w, http.StatusOK, &LoginResponse{
+	writeJSON(w, http.StatusOK, &LoginResponse{
 		AccessToken: accessToken,
 		User:        user,
-	}, nil)
+	})
 }
 
 type RefreshTokenRequest struct {
@@ -184,24 +184,24 @@ func (h *Handlers) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if token == "" {
-		Error(w, r, http.StatusBadRequest, errors.New("refresh token required"))
+		writeError(w, r, http.StatusBadRequest, errors.New("refresh token required"))
 		return
 	}
 
 	claims, err := h.tm.Validate(token)
 	if err != nil {
-		Error(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
 	if claims.TokenType != "refresh" {
-		Error(w, r, http.StatusUnauthorized, errors.New("invalid token type"))
+		writeError(w, r, http.StatusUnauthorized, errors.New("invalid token type"))
 		return
 	}
 
 	exists, err := h.users.CheckRefreshToken(r.Context(), claims.ID)
 	if err != nil || !exists {
-		Error(w, r, http.StatusUnauthorized, errors.New("refresh token invalid or revoked"))
+		writeError(w, r, http.StatusUnauthorized, errors.New("refresh token invalid or revoked"))
 		return
 	}
 
@@ -209,13 +209,13 @@ func (h *Handlers) RefreshToken(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, refreshToken, newJti, err := h.tm.GeneratePair(claims.UserID, claims.Email)
 	if err != nil {
-		Error(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
 	err = h.users.SaveRefreshToken(r.Context(), newJti, claims.UserID, time.Now().Add(h.tm.GetRefreshExpiry()))
 	if err != nil {
-		Error(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -227,9 +227,9 @@ func (h *Handlers) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 
-	JSON(w, http.StatusOK, &RefreshTokenResponse{
+	writeJSON(w, http.StatusOK, &RefreshTokenResponse{
 		AccessToken: accessToken,
-	}, nil)
+	})
 }
 
 // logout godoc
@@ -265,18 +265,18 @@ func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 	loggedOut := "logged out"
 
 	if token == "" {
-		JSON(w, http.StatusOK, loggedOut, nil)
+		writeJSON(w, http.StatusOK, loggedOut)
 		return
 	}
 
 	claims, err := h.tm.Validate(token)
 	if err != nil || claims.TokenType != "refresh" {
 		// Ignore validation errors on logout
-		JSON(w, http.StatusOK, loggedOut, nil)
+		writeJSON(w, http.StatusOK, loggedOut)
 		return
 	}
 
 	_ = h.users.RevokeRefreshToken(r.Context(), claims.ID)
 
-	JSON(w, http.StatusOK, loggedOut, nil)
+	writeJSON(w, http.StatusOK, loggedOut)
 }

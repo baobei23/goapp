@@ -22,17 +22,17 @@ import (
 func (h *Handlers) ReadUserByID(w http.ResponseWriter, r *http.Request) {
 	id := GetUserID(r)
 	if id == "" {
-		Error(w, r, http.StatusUnauthorized, errors.New("unauthorized"))
+		writeError(w, r, http.StatusUnauthorized, errors.New("unauthorized"))
 		return
 	}
 
 	out, err := h.users.ReadByID(r.Context(), id)
 	if err != nil {
-		Error(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	JSON(w, http.StatusOK, out, nil)
+	writeJSON(w, http.StatusOK, out)
 }
 
 // changePassword godoc
@@ -53,7 +53,7 @@ func (h *Handlers) ReadUserByID(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	id := GetUserID(r)
 	if id == "" {
-		Error(w, r, http.StatusUnauthorized, errors.New("unauthorized"))
+		writeError(w, r, http.StatusUnauthorized, errors.New("unauthorized"))
 		return
 	}
 
@@ -62,18 +62,18 @@ func (h *Handlers) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		NewPassword string `json:"new_password"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		Error(w, r, http.StatusBadRequest, err)
+		writeError(w, r, http.StatusBadRequest, err)
 		return
 	}
 
 	if err := h.users.ChangePassword(r.Context(), id, req.OldPassword, req.NewPassword); err != nil {
 		if err.Error() == "invalid credentials" {
-			Error(w, r, http.StatusUnauthorized, err)
+			writeError(w, r, http.StatusUnauthorized, err)
 			return
 		}
-		Error(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]string{"message": "password updated successfully"}, nil)
+	writeJSON(w, http.StatusOK, map[string]string{"message": "password updated successfully"})
 }

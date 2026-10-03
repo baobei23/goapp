@@ -35,5 +35,5 @@ func (h *Handlers) registerRoutes(mux *http.ServeMux) {
 }
 
 func (h *Handlers) HelloWorld(w http.ResponseWriter, r *http.Request) {
-	JSON(w, http.StatusOK, "hello world", nil)
+	writeJSON(w, http.StatusOK, "hello world")
 }

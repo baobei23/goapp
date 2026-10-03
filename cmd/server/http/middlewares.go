@@ -21,25 +21,25 @@ func (h *Handlers) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			Error(w, r, http.StatusUnauthorized, errors.New("authorization header is missing"))
+			writeError(w, r, http.StatusUnauthorized, errors.New("authorization header is missing"))
 			return
 		}
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			Error(w, r, http.StatusUnauthorized, errors.New("invalid authorization header format"))
+			writeError(w, r, http.StatusUnauthorized, errors.New("invalid authorization header format"))
 			return
 		}
 
 		tokenStr := parts[1]
 		claims, err := h.tm.Validate(tokenStr)
 		if err != nil {
-			Error(w, r, http.StatusUnauthorized, errors.New("invalid token"))
+			writeError(w, r, http.StatusUnauthorized, errors.New("invalid token"))
 			return
 		}
 
 		if claims.TokenType != "access" {
-			Error(w, r, http.StatusUnauthorized, errors.New("invalid token type"))
+			writeError(w, r, http.StatusUnauthorized, errors.New("invalid token type"))
 			return
 		}
 
@@ -70,7 +70,7 @@ func recoveryMiddleware(next http.Handler) http.Handler {
 		defer func() {
 			if rec := recover(); rec != nil {
 				slog.ErrorContext(r.Context(), "panic recovered", "error", rec)
-				Error(w, r, http.StatusInternalServerError, errors.New("internal server error"))
+				writeError(w, r, http.StatusInternalServerError, errors.New("internal server error"))
 			}
 		}()
 		next.ServeHTTP(w, r)
