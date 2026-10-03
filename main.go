@@ -8,8 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/baobei23/goapp/docs"
-
 	"log/slog"
 
 	"sync/atomic"

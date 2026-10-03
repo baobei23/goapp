@@ -3,8 +3,6 @@ package http
 import (
 	"net/http"
 
-	httpSwagger "github.com/swaggo/http-swagger/v2"
-
 	"github.com/baobei23/goapp/internal/pkg/jwt"
 	"github.com/baobei23/goapp/internal/usernotes"
 	"github.com/baobei23/goapp/internal/users"
@@ -18,9 +16,6 @@ type Handlers struct {
 }
 
 func (h *Handlers) registerRoutes(mux *http.ServeMux) {
-	// Documentation
-	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
-
 	// root
 	mux.HandleFunc("GET /{$}", h.HelloWorld)
 
