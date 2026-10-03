@@ -3,8 +3,7 @@ package http
 import (
 	"errors"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
+	"strings"
 
 	"github.com/baobei23/goapp/internal/usernotes"
 )
@@ -28,16 +27,21 @@ type RegisterNoteRequest struct {
 //	@Failure		500		{object}	ErrorResponse
 //	@Router			/usernotes [post]
 //	@Security		ApiKeyAuth
-func (h *Handlers) RegisterNote(c *gin.Context) {
-	userID := GetUserID(c)
+func (h *Handlers) RegisterNote(w http.ResponseWriter, r *http.Request) {
+	userID := GetUserID(r)
 	if userID == "" {
-		Error(c, http.StatusUnauthorized, errors.New("unauthorized"))
+		Error(w, r, http.StatusUnauthorized, errors.New("unauthorized"))
 		return
 	}
 
-	req := &RegisterNoteRequest{}
-	if err := c.ShouldBindJSON(req); err != nil {
-		Error(c, http.StatusBadRequest, err)
+	var req RegisterNoteRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	if strings.TrimSpace(req.Title) == "" || strings.TrimSpace(req.Content) == "" {
+		Error(w, r, http.StatusBadRequest, errors.New("title and content are required"))
 		return
 	}
 
@@ -47,13 +51,13 @@ func (h *Handlers) RegisterNote(c *gin.Context) {
 		UserID:  userID,
 	}
 
-	un, err := h.apis.RegisterNote(c.Request.Context(), unote)
+	un, err := h.notes.SaveNote(r.Context(), unote)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, err)
+		Error(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	JSON(c, http.StatusCreated, un, nil)
+	JSON(w, http.StatusCreated, un, nil)
 }
 
 // readUserNote godoc
@@ -70,24 +74,24 @@ func (h *Handlers) RegisterNote(c *gin.Context) {
 //	@Failure		500		{object}	ErrorResponse
 //	@Router			/usernotes/{noteID} [get]
 //	@Security		ApiKeyAuth
-func (h *Handlers) ReadUserNote(c *gin.Context) {
-	userID := GetUserID(c)
+func (h *Handlers) ReadUserNote(w http.ResponseWriter, r *http.Request) {
+	userID := GetUserID(r)
 	if userID == "" {
-		Error(c, http.StatusUnauthorized, errors.New("unauthorized"))
+		Error(w, r, http.StatusUnauthorized, errors.New("unauthorized"))
 		return
 	}
 
-	noteID := c.Param("noteID")
+	noteID := r.PathValue("noteID")
 	if noteID == "" {
-		Error(c, http.StatusBadRequest, errors.New("noteID is required"))
+		Error(w, r, http.StatusBadRequest, errors.New("noteID is required"))
 		return
 	}
 
-	un, err := h.apis.ReadUserNote(c.Request.Context(), userID, noteID)
+	un, err := h.notes.GetNoteByID(r.Context(), userID, noteID)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, err)
+		Error(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	JSON(c, http.StatusOK, un, nil)
+	JSON(w, http.StatusOK, un, nil)
 }

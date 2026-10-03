@@ -1,14 +1,14 @@
 // Package kafka implements the Kafka subscription functionality
 package kafka
 
-import "github.com/baobei23/goapp/internal/api"
+import "github.com/baobei23/goapp/internal/users"
 
 type Kafka struct {
-	apis api.Subscriber
+	users *users.Users
 }
 
-func New(apis api.Subscriber) *Kafka {
+func New(userSvc *users.Users) *Kafka {
 	return &Kafka{
-		apis: apis,
+		users: userSvc,
 	}
 }

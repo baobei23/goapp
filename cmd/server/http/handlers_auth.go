@@ -3,16 +3,33 @@ package http
 import (
 	"errors"
 	"net/http"
+	"net/mail"
+	"strings"
 	"time"
 
 	"github.com/baobei23/goapp/internal/users"
-	"github.com/gin-gonic/gin"
 )
 
 type RegisterRequest struct {
 	FullName string `json:"fullName" binding:"required,max=255"`
 	Email    string `json:"email" binding:"required,email,max=255"`
 	Password string `json:"password" binding:"required,min=8"`
+}
+
+func (req *RegisterRequest) validate() error {
+	if strings.TrimSpace(req.FullName) == "" || len(req.FullName) > 255 {
+		return errors.New("fullName is required and must be at most 255 characters")
+	}
+	if strings.TrimSpace(req.Email) == "" || len(req.Email) > 255 {
+		return errors.New("email is required and must be at most 255 characters")
+	}
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return errors.New("invalid email address")
+	}
+	if len(req.Password) < 8 {
+		return errors.New("password must be at least 8 characters")
+	}
+	return nil
 }
 
 // register godoc
@@ -28,10 +45,14 @@ type RegisterRequest struct {
 //	@Failure		409		{object}	ErrorResponse
 //	@Failure		500		{object}	ErrorResponse
 //	@Router			/register [post]
-func (h *Handlers) Register(c *gin.Context) {
-	req := &RegisterRequest{}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		Error(c, http.StatusBadRequest, err)
+func (h *Handlers) Register(w http.ResponseWriter, r *http.Request) {
+	var req RegisterRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+	if err := req.validate(); err != nil {
+		Error(w, r, http.StatusBadRequest, err)
 		return
 	}
 
@@ -41,19 +62,37 @@ func (h *Handlers) Register(c *gin.Context) {
 		Password: []byte(req.Password),
 	}
 
-	createdUser, err := h.apis.Register(c.Request.Context(), u)
+	createdUser, err := h.users.Register(r.Context(), u)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, err)
+		if errors.Is(err, users.ErrUserEmailAlreadyExists) {
+			Error(w, r, http.StatusConflict, err)
+			return
+		}
+		Error(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	JSON(c, http.StatusCreated, createdUser, nil)
+	JSON(w, http.StatusCreated, createdUser, nil)
 }
 
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
+
+func (req *LoginRequest) validate() error {
+	if strings.TrimSpace(req.Email) == "" {
+		return errors.New("email is required")
+	}
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return errors.New("invalid email address")
+	}
+	if req.Password == "" {
+		return errors.New("password is required")
+	}
+	return nil
+}
+
 type LoginResponse struct {
 	AccessToken string      `json:"accessToken"`
 	User        *users.User `json:"user"`
@@ -71,34 +110,44 @@ type LoginResponse struct {
 //	@Failure		400		{object}	ErrorResponse
 //	@Failure		500		{object}	ErrorResponse
 //	@Router			/login [post]
-func (h *Handlers) Login(c *gin.Context) {
-	req := &LoginRequest{}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		Error(c, http.StatusBadRequest, err)
+func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
+	var req LoginRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+	if err := req.validate(); err != nil {
+		Error(w, r, http.StatusBadRequest, err)
 		return
 	}
 
-	user, err := h.apis.Login(c.Request.Context(), req.Email, req.Password)
+	user, err := h.users.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, err)
+		Error(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
 	accessToken, refreshToken, jti, err := h.tm.GeneratePair(user.ID, user.Email)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, err)
+		Error(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	err = h.apis.SaveRefreshToken(c.Request.Context(), jti, user.ID, time.Now().Add(h.tm.GetRefreshExpiry()))
+	err = h.users.SaveRefreshToken(r.Context(), jti, user.ID, time.Now().Add(h.tm.GetRefreshExpiry()))
 	if err != nil {
-		Error(c, http.StatusInternalServerError, err)
+		Error(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	c.SetCookie("refreshToken", refreshToken, int(h.tm.GetRefreshExpiry().Seconds()), "/", "", false, true)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refreshToken",
+		Value:    refreshToken,
+		Path:     "/",
+		MaxAge:   int(h.tm.GetRefreshExpiry().Seconds()),
+		HttpOnly: true,
+	})
 
-	JSON(c, http.StatusOK, &LoginResponse{
+	JSON(w, http.StatusOK, &LoginResponse{
 		AccessToken: accessToken,
 		User:        user,
 	}, nil)
@@ -107,6 +156,7 @@ func (h *Handlers) Login(c *gin.Context) {
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refreshToken"`
 }
+
 type RefreshTokenResponse struct {
 	AccessToken string `json:"accessToken"`
 }
@@ -123,53 +173,61 @@ type RefreshTokenResponse struct {
 //	@Failure		400		{object}	ErrorResponse
 //	@Failure		500		{object}	ErrorResponse
 //	@Router			/auth/refresh [post]
-func (h *Handlers) RefreshToken(c *gin.Context) {
-	req := &RefreshTokenRequest{}
-	_ = c.ShouldBindJSON(&req)
+func (h *Handlers) RefreshToken(w http.ResponseWriter, r *http.Request) {
+	var req RefreshTokenRequest
+	_ = decodeJSON(w, r, &req)
 
 	token := req.RefreshToken
 	if token == "" {
-		token, _ = c.Cookie("refreshToken")
+		if cookie, err := r.Cookie("refreshToken"); err == nil {
+			token = cookie.Value
+		}
 	}
 	if token == "" {
-		Error(c, http.StatusBadRequest, errors.New("refresh token required"))
+		Error(w, r, http.StatusBadRequest, errors.New("refresh token required"))
 		return
 	}
 
 	claims, err := h.tm.Validate(token)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, err)
+		Error(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
 	if claims.TokenType != "refresh" {
-		Error(c, http.StatusUnauthorized, errors.New("invalid token type"))
+		Error(w, r, http.StatusUnauthorized, errors.New("invalid token type"))
 		return
 	}
 
-	exists, err := h.apis.CheckRefreshToken(c.Request.Context(), claims.ID)
+	exists, err := h.users.CheckRefreshToken(r.Context(), claims.ID)
 	if err != nil || !exists {
-		Error(c, http.StatusUnauthorized, errors.New("refresh token invalid or revoked"))
+		Error(w, r, http.StatusUnauthorized, errors.New("refresh token invalid or revoked"))
 		return
 	}
 
-	_ = h.apis.RevokeRefreshToken(c.Request.Context(), claims.ID)
+	_ = h.users.RevokeRefreshToken(r.Context(), claims.ID)
 
 	accessToken, refreshToken, newJti, err := h.tm.GeneratePair(claims.UserID, claims.Email)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, err)
+		Error(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	err = h.apis.SaveRefreshToken(c.Request.Context(), newJti, claims.UserID, time.Now().Add(h.tm.GetRefreshExpiry()))
+	err = h.users.SaveRefreshToken(r.Context(), newJti, claims.UserID, time.Now().Add(h.tm.GetRefreshExpiry()))
 	if err != nil {
-		Error(c, http.StatusInternalServerError, err)
+		Error(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	c.SetCookie("refreshToken", refreshToken, int(h.tm.GetRefreshExpiry().Seconds()), "/", "", false, true)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refreshToken",
+		Value:    refreshToken,
+		Path:     "/",
+		MaxAge:   int(h.tm.GetRefreshExpiry().Seconds()),
+		HttpOnly: true,
+	})
 
-	JSON(c, http.StatusOK, &RefreshTokenResponse{
+	JSON(w, http.StatusOK, &RefreshTokenResponse{
 		AccessToken: accessToken,
 	}, nil)
 }
@@ -185,32 +243,40 @@ func (h *Handlers) RefreshToken(c *gin.Context) {
 //	@Success		200		{object}	BaseResponse{data=string}
 //	@Failure		400		{object}	ErrorResponse
 //	@Router			/auth/logout [post]
-func (h *Handlers) Logout(c *gin.Context) {
-	req := &RefreshTokenRequest{}
-	_ = c.ShouldBindJSON(&req)
+func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
+	var req RefreshTokenRequest
+	_ = decodeJSON(w, r, &req)
 
 	token := req.RefreshToken
 	if token == "" {
-		token, _ = c.Cookie("refreshToken")
+		if cookie, err := r.Cookie("refreshToken"); err == nil {
+			token = cookie.Value
+		}
 	}
 
-	c.SetCookie("refreshToken", "", -1, "/", "", false, true)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refreshToken",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
 
-	var loggedOut string = "logged out"
+	loggedOut := "logged out"
 
 	if token == "" {
-		JSON(c, http.StatusOK, loggedOut, nil)
+		JSON(w, http.StatusOK, loggedOut, nil)
 		return
 	}
 
 	claims, err := h.tm.Validate(token)
 	if err != nil || claims.TokenType != "refresh" {
 		// Ignore validation errors on logout
-		JSON(c, http.StatusOK, loggedOut, nil)
+		JSON(w, http.StatusOK, loggedOut, nil)
 		return
 	}
 
-	_ = h.apis.RevokeRefreshToken(c.Request.Context(), claims.ID)
+	_ = h.users.RevokeRefreshToken(r.Context(), claims.ID)
 
-	JSON(c, http.StatusOK, loggedOut, nil)
+	JSON(w, http.StatusOK, loggedOut, nil)
 }

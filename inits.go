@@ -9,7 +9,6 @@ import (
 
 	"github.com/baobei23/goapp/cmd/server/grpc"
 	xhttp "github.com/baobei23/goapp/cmd/server/http"
-	"github.com/baobei23/goapp/internal/api"
 	"github.com/baobei23/goapp/internal/configs"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -66,9 +65,9 @@ func setupTelemetry(cfgs *configs.Configs) *sdktrace.TracerProvider {
 	return tp
 }
 
-func startServers(svr api.Server, cfgs *configs.Configs, tm *jwt.TokenManager, fatalErr chan<- error) (*xhttp.HTTP, *grpc.GRPC) {
+func startServers(userSvc *users.Users, noteSvc *usernotes.UserNotes, cfgs *configs.Configs, tm *jwt.TokenManager, fatalErr chan<- error) (*xhttp.HTTP, *grpc.GRPC) {
 	hcfg, _ := cfgs.HTTP()
-	hserver, err := xhttp.NewService(hcfg, svr, tm)
+	hserver, err := xhttp.NewService(hcfg, userSvc, noteSvc, tm)
 	if err != nil {
 		fatalErr <- fmt.Errorf("failed to initialize HTTP server: %w", err)
 	}
@@ -137,9 +136,7 @@ func start(
 	notePGstore := usernotes.NewPostgresStore(pqdriver)
 	noteSvc := usernotes.NewService(notePGstore)
 
-	svrAPIs := api.NewServer(userSvc, noteSvc)
-
 	tm := cfgs.JWT()
-	hserver, gserver = startServers(svrAPIs, cfgs, tm, fatalErr)
+	hserver, gserver = startServers(userSvc, noteSvc, cfgs, tm, fatalErr)
 	return
 }

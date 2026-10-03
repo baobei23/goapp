@@ -92,8 +92,6 @@ local development, Docker Compose, and Kubernetes.
   > Keep this name consistent across all environments (the code currently reads
   > `JWT_SECRET`).
 
-- `TEMPLATES_BASEPATH` - base path for HTML templates
-
 ### Optional
 
 - `ENABLE_METRICS` - enable/disable metrics (`true`/`false`, enabled by default)
@@ -106,7 +104,7 @@ export ENV= export APP_NAME= export APP_VERSION=
 export POSTGRES_HOST= export POSTGRES_PORT= export POSTGRES_STORENAME= export
 POSTGRES_USERNAME= export POSTGRES_PASSWORD= export POSTGRES_SSLMODE=
 
-export JWT_SECRET_KEY= export TEMPLATES_BASEPATH=
+export JWT_SECRET_KEY=
 
 export ENABLE_METRICS= export ENABLE_TRACING=
 

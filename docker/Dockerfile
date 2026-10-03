@@ -25,11 +25,8 @@ RUN apk update && apk add --no-cache \
 USER appuser
 
 # Copy assets and binary
-COPY --from=builder /app/cmd/server/http/web /home/appuser/app/web
 COPY --from=builder /app/db/migrations /home/appuser/app/db/migrations
 COPY --from=builder /app/appbin /home/appuser/app/appbin
-
-ENV TEMPLATES_BASEPATH=/home/appuser/app/web/templates
 
 WORKDIR /home/appuser/app
 

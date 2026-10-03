@@ -3,7 +3,6 @@ package configs
 import (
 	"errors"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/baobei23/goapp/cmd/server/http"
@@ -36,13 +35,11 @@ type Configs struct {
 // HTTP returns the configuration required for HTTP package
 func (cfg *Configs) HTTP() (*http.Config, error) {
 	return &http.Config{
-		EnableAccessLog:   (cfg.Environment == EnvLocal) || (cfg.Environment == EnvTest),
-		TemplatesBasePath: strings.TrimSpace(os.Getenv("TEMPLATES_BASEPATH")),
-		Port:              8080,
-		ReadTimeout:       time.Second * 5,
-		WriteTimeout:      time.Second * 5,
-		DialTimeout:       time.Second * 3,
-		EnableTracing:     cfg.EnableTracing,
+		EnableAccessLog: (cfg.Environment == EnvLocal) || (cfg.Environment == EnvTest),
+		Port:            8080,
+		ReadTimeout:     time.Second * 5,
+		WriteTimeout:    time.Second * 5,
+		EnableTracing:   cfg.EnableTracing,
 	}, nil
 }
 
@@ -58,8 +55,6 @@ func (cfg *Configs) Postgres() *postgres.Config {
 		Password:  os.Getenv("POSTGRES_PASSWORD"),
 
 		ConnPoolSize:  24,
-		ReadTimeout:   time.Second * 3,
-		WriteTimeout:  time.Second * 6,
 		IdleTimeout:   time.Minute,
 		DialTimeout:   time.Second * 3,
 		EnableTracing: cfg.EnableTracing,

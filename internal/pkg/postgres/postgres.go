@@ -33,8 +33,6 @@ type Config struct {
 	SSLMode string `json:"sslMode,omitempty"`
 
 	ConnPoolSize uint          `json:"connPoolSize,omitempty"`
-	ReadTimeout  time.Duration `json:"readTimeout,omitempty"`
-	WriteTimeout time.Duration `json:"writeTimeout,omitempty"`
 	IdleTimeout  time.Duration `json:"idleTimeout,omitempty"`
 	DialTimeout  time.Duration `json:"dialTimeout,omitempty"`
 

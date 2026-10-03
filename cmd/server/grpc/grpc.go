@@ -3,11 +3,11 @@ package grpc
 import (
 	"context"
 
-	"github.com/baobei23/goapp/internal/api"
+	"github.com/baobei23/goapp/internal/users"
 )
 
 type GRPC struct {
-	apis api.Server
+	users *users.Users
 }
 
 func (gr *GRPC) Shutdown(ctx context.Context) error {
@@ -15,8 +15,8 @@ func (gr *GRPC) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func New(apis api.Server) *GRPC {
+func New(userSvc *users.Users) *GRPC {
 	return &GRPC{
-		apis: apis,
+		users: userSvc,
 	}
 }

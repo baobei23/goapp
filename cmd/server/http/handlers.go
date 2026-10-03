@@ -1,85 +1,44 @@
 package http
 
 import (
-	"bytes"
-	"fmt"
-	"html/template"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	swaggerfiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 
-	"github.com/baobei23/goapp/internal/api"
 	"github.com/baobei23/goapp/internal/pkg/jwt"
+	"github.com/baobei23/goapp/internal/usernotes"
+	"github.com/baobei23/goapp/internal/users"
 )
 
 // Handlers struct has all the dependencies required for HTTP handlers
 type Handlers struct {
-	apis api.Server
-	home *template.Template
-	tm   *jwt.TokenManager
+	users *users.Users
+	notes *usernotes.UserNotes
+	tm    *jwt.TokenManager
 }
 
-func (h *Handlers) registerRoutes(r *gin.Engine) {
+func (h *Handlers) registerRoutes(mux *http.ServeMux) {
+	// Documentation
+	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
 
-	//Documentation
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	// root
+	mux.HandleFunc("GET /{$}", h.HelloWorld)
 
-	//root
-	r.GET("/", h.HelloWorld)
+	// auth
+	mux.HandleFunc("POST /register", h.Register)
+	mux.HandleFunc("POST /login", h.Login)
+	mux.HandleFunc("POST /auth/refresh", h.RefreshToken)
+	mux.HandleFunc("POST /auth/logout", h.Logout)
 
-	//auth
-	r.POST("/register", h.Register)
-	r.POST("/login", h.Login)
-	r.POST("/auth/refresh", h.RefreshToken)
-	r.POST("/auth/logout", h.Logout)
+	// users
+	mux.HandleFunc("GET /users", h.AuthMiddleware(h.ReadUserByID))
+	mux.HandleFunc("PUT /users/password", h.AuthMiddleware(h.ChangePassword))
 
-	protected := r.Group("/")
-	protected.Use(h.AuthMiddleware())
-
-	//users
-	protected.GET("/users", h.ReadUserByID)
-	protected.PUT("/users/password", h.ChangePassword)
-
-	//usernotes
-	protected.POST("/usernotes", h.RegisterNote)
-	protected.GET("/usernotes/:noteID", h.ReadUserNote)
+	// usernotes
+	mux.HandleFunc("POST /usernotes", h.AuthMiddleware(h.RegisterNote))
+	mux.HandleFunc("GET /usernotes/{noteID}", h.AuthMiddleware(h.ReadUserNote))
 }
 
-func (h *Handlers) HelloWorld(c *gin.Context) {
-	contentType := c.GetHeader("Content-Type")
-	switch contentType {
-	case "application/json":
-		c.JSON(http.StatusOK, "hello world")
-	default:
-		buff := bytes.NewBufferString("")
-		err := h.home.Execute(
-			buff,
-			struct {
-				Message string
-			}{
-				Message: "Welcome to the Home Page!",
-			},
-		)
-		if err != nil {
-			Error(c, http.StatusInternalServerError, err)
-			return
-		}
-
-		c.Header("Content-Type", "text/html; charset=UTF-8")
-		c.String(http.StatusOK, buff.String())
-	}
-}
-
-func loadHomeTemplate(basePath string) (*template.Template, error) {
-	t := template.New("index.html")
-	home, err := t.ParseFiles(
-		fmt.Sprintf("%s/index.html", basePath),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed parsing templates: %w", err)
-	}
-
-	return home, nil
+func (h *Handlers) HelloWorld(w http.ResponseWriter, r *http.Request) {
+	JSON(w, http.StatusOK, "hello world", nil)
 }

@@ -1,10 +1,9 @@
 package http
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 type BaseResponse struct {
@@ -17,35 +16,42 @@ type ErrorResponse struct {
 }
 
 // JSON sends a JSON response with the given data and meta
-func JSON(c *gin.Context, status int, data any, meta any) {
-	c.JSON(status, BaseResponse{
+func JSON(w http.ResponseWriter, status int, data any, meta any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(BaseResponse{
 		Data: data,
 		Meta: meta,
 	})
 }
 
 // Error sends a sanitized error response and logs internal server errors
-func Error(c *gin.Context, status int, err error) {
+func Error(w http.ResponseWriter, r *http.Request, status int, err error) {
 	var clientMsg string
 
 	if status >= http.StatusInternalServerError {
-		slog.ErrorContext(c.Request.Context(), "internal server error",
-			"method", c.Request.Method,
-			"path", c.Request.URL.Path,
+		slog.ErrorContext(r.Context(), "internal server error",
+			"method", r.Method,
+			"path", r.URL.Path,
 			"error", err,
 		)
 		clientMsg = "Internal server error. Please try again later."
+	} else if err != nil {
+		clientMsg = err.Error()
 	} else {
-		if err != nil {
-			clientMsg = err.Error()
-		} else {
-			clientMsg = "Bad request"
-		}
+		clientMsg = "Bad request"
 	}
 
-	c.JSON(status, ErrorResponse{
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(ErrorResponse{
 		Error: clientMsg,
 	})
+}
 
-	c.Abort()
+// decodeJSON decodes the request body with a size ceiling
+func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
+	// ponytail: 1MB payload ceiling; increase if larger payloads needed
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	return json.NewDecoder(r.Body).Decode(dst)
 }

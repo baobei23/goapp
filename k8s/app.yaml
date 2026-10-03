@@ -110,11 +110,6 @@ spec:
                 secretKeyRef:
                   name: postgres-credentials
                   key: POSTGRES_SSLMODE
-            - name: TEMPLATES_BASEPATH
-              valueFrom:
-                configMapKeyRef:
-                  name: app-config
-                  key: TEMPLATES_BASEPATH
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

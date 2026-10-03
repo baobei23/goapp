@@ -3,8 +3,6 @@ package http
 import (
 	"errors"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 // readUserByID godoc
@@ -21,20 +19,20 @@ import (
 //	@Router			/users [get]
 //
 //	@security		ApiKeyAuth
-func (h *Handlers) ReadUserByID(c *gin.Context) {
-	id := GetUserID(c)
+func (h *Handlers) ReadUserByID(w http.ResponseWriter, r *http.Request) {
+	id := GetUserID(r)
 	if id == "" {
-		Error(c, http.StatusUnauthorized, errors.New("unauthorized"))
+		Error(w, r, http.StatusUnauthorized, errors.New("unauthorized"))
 		return
 	}
 
-	out, err := h.apis.ReadUserByID(c.Request.Context(), id)
+	out, err := h.users.ReadByID(r.Context(), id)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, err)
+		Error(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	JSON(c, http.StatusOK, out, nil)
+	JSON(w, http.StatusOK, out, nil)
 }
 
 // changePassword godoc
@@ -52,10 +50,10 @@ func (h *Handlers) ReadUserByID(c *gin.Context) {
 //	@Router			/users/password [put]
 //
 //	@security		ApiKeyAuth
-func (h *Handlers) ChangePassword(c *gin.Context) {
-	id := GetUserID(c)
+func (h *Handlers) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	id := GetUserID(r)
 	if id == "" {
-		Error(c, http.StatusUnauthorized, errors.New("unauthorized"))
+		Error(w, r, http.StatusUnauthorized, errors.New("unauthorized"))
 		return
 	}
 
@@ -63,19 +61,19 @@ func (h *Handlers) ChangePassword(c *gin.Context) {
 		OldPassword string `json:"old_password"`
 		NewPassword string `json:"new_password"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		Error(c, http.StatusBadRequest, err)
+	if err := decodeJSON(w, r, &req); err != nil {
+		Error(w, r, http.StatusBadRequest, err)
 		return
 	}
 
-	if err := h.apis.ChangePassword(c.Request.Context(), id, req.OldPassword, req.NewPassword); err != nil {
+	if err := h.users.ChangePassword(r.Context(), id, req.OldPassword, req.NewPassword); err != nil {
 		if err.Error() == "invalid credentials" {
-			Error(c, http.StatusUnauthorized, err)
+			Error(w, r, http.StatusUnauthorized, err)
 			return
 		}
-		Error(c, http.StatusInternalServerError, err)
+		Error(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	JSON(c, http.StatusOK, map[string]string{"message": "password updated successfully"}, nil)
+	JSON(w, http.StatusOK, map[string]string{"message": "password updated successfully"}, nil)
 }
