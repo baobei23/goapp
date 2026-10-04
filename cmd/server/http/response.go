@@ -49,7 +49,7 @@ func writeError(w http.ResponseWriter, r *http.Request, status int, err error) {
 
 // decodeJSON decodes the request body with a size ceiling
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
-	// ponytail: 1MB payload ceiling; increase if larger payloads needed
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
 	return json.NewDecoder(r.Body).Decode(dst)
 }

@@ -9,7 +9,7 @@ RUN go mod download
 
 # Copy source code and build
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags '-s -w -extldflags "-static"' -o /app/appbin *.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags '-s -w -extldflags "-static"' -o /app/appbin .
 
 # Final lean Alpine runtime image
 FROM alpine:3.23

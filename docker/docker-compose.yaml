@@ -13,11 +13,9 @@ services:
       - goapp_network
 
   goapp:
-    image: cosmtrek/air:latest #change to golang:version
-    volumes:
-      - ${PWD}:/app
-    working_dir: /app
-    tty: true
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     environment:
       ENV: ${ENV}
       APP_NAME: ${APP_NAME}
